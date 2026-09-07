@@ -1,0 +1,12 @@
+services:
+  hpc:
+    build:
+      # El contexto es la raíz del repo; las rutas son relativas a este archivo.
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: parallel-benchmark-hpc:latest
+    volumes:
+      - ../:/work
+    working_dir: /work
+    stdin_open: true
+    tty: true
