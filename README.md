@@ -85,15 +85,23 @@ las mediciones.
 
 ## Máquina de referencia
 
-Las corridas oficiales se realizan en la Mac de Nico, siempre en este contenedor.
-**Pendiente de completar antes de publicar resultados:** modelo/chip, cores lógicos
-y físicos, RAM y versión de macOS. Se pueden obtener con:
+Todas las corridas oficiales se realizan en la Mac de Nico, siempre dentro de
+este contenedor, para que los números sean comparables entre sí.
 
-```bash
-sysctl -n machdep.cpu.brand_string
-sysctl -n hw.ncpu hw.physicalcpu hw.memsize
-sw_vers
-```
+| Característica | Valor |
+| --- | --- |
+| Chip | Apple M4 Pro (`Mac16,8`) |
+| Arquitectura | `arm64` (Apple Silicon) |
+| Cores físicos | 12 (8 de rendimiento + 4 de eficiencia) |
+| Cores lógicos | 12 (Apple Silicon no usa SMT/Hyper-Threading) |
+| RAM | 24 GB (unificada) |
+| Sistema operativo | macOS 26.6.1 (build 25G76) |
+
+El detalle completo, cómo se obtuvo y las implicaciones para las mediciones están
+en [docs/maquina-referencia.md](docs/maquina-referencia.md). Además,
+`scripts/detect_specs.sh` captura las specs **del contenedor** en tiempo de
+corrida y las incrusta en el bloque `#META` de cada log, así cada resultado queda
+autodocumentado.
 
 Docker en macOS se ejecuta dentro de una VM ligera; por ello los números no son
 100% bare-metal. Como todas las mediciones se harán en el mismo entorno, las
