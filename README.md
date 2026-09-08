@@ -50,6 +50,25 @@ barrido de hilos y guardar los logs:
 El script usa 1, 2, 4 y 8 hilos. Ajustar esa lista en `scripts/run_sweep.sh` a
 los cores disponibles en la máquina de referencia antes de las corridas oficiales.
 
+### NPB (proxy de SPEC): OpenMP vs MPI
+
+Las NAS Parallel Benchmarks sustituyen a SPEC en la parte práctica (el porqué
+está en [docs/spec-investigacion.md](docs/spec-investigacion.md)). Se compilan y
+corren en sus dos variantes para medir el overhead de comunicación del mismo
+kernel bajo memoria compartida (OpenMP) y distribuida (MPI):
+
+```bash
+./scripts/build_npb.sh          # compila OMP y MPI (kernels cg y ep, clase A)
+./scripts/run_npb.sh            # barre hilos (OMP) y procesos (MPI)
+```
+
+Los kernels, la clase y los barridos se ajustan por variables de entorno, por
+ejemplo `NPB_KERNELS="cg ep ft" NPB_CLASS=B ./scripts/build_npb.sh`. En NPB-MPI
+el número de procesos es de tiempo de compilación, por eso `build_npb.sh` genera
+un binario por cada `-np` del barrido. Los logs quedan en
+`results/npb/<kernel>_<clase>_<omp|mpi>_.../threads_<N>.log` y los consume el
+mismo `scripts/parse_results.py`.
+
 ## Resultados y análisis
 
 Los logs van a `results/<benchmark>/threads_<N>.log`. Una vez que cada responsable

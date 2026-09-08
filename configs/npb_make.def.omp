@@ -1,0 +1,41 @@
+#---------------------------------------------------------------------------
+# make.def para NPB3.4-OMP (variante OpenMP / memoria compartida).
+# Proyecto Caso 4 - Computacion Paralela y Distribuida UVG.
+# build_npb.sh copia este archivo a NPB3.4.3/NPB3.4-OMP/config/make.def.
+#
+# Flags alineados con scripts/env.sh (-O3 -march=native -fopenmp) para que
+# NPB se compile igual que el resto de benchmarks del repo.
+#---------------------------------------------------------------------------
+
+#---------------------------------------------------------------------------
+# Fortran paralelo (CG, EP, FT, MG, LU, BT, SP).
+# -fallow-argument-mismatch es obligatorio con gfortran >= 10 (Ubuntu 24.04
+# trae gfortran 13/14): NPB pasa argumentos con tipos distintos a la misma
+# rutina y sin este flag la compilacion aborta con error, no warning.
+#---------------------------------------------------------------------------
+FC       = gfortran
+FFLAGS   = -O3 -march=native -fopenmp -fallow-argument-mismatch
+FLINK    = $(FC)
+FLINKFLAGS = -O3 -march=native -fopenmp
+
+#---------------------------------------------------------------------------
+# C paralelo (IS, DC).
+#---------------------------------------------------------------------------
+CC       = gcc
+CFLAGS   = -O3 -march=native -fopenmp
+CLINK    = $(CC)
+CLINKFLAGS = -O3 -march=native -fopenmp
+
+#---------------------------------------------------------------------------
+# Utilitarios en C (generadores, wtime).
+#---------------------------------------------------------------------------
+UCC      = gcc
+BINDIR   = ../bin
+RAND     = randi8
+WTIME    = wtime.c
+
+#---------------------------------------------------------------------------
+# No es Cray ni IBM: se dejan comentados.
+#---------------------------------------------------------------------------
+# MACHINE = -DCRAY
+# MACHINE = -DIBM

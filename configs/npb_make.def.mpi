@@ -1,0 +1,47 @@
+#---------------------------------------------------------------------------
+# make.def para NPB3.4-MPI (variante MPI / memoria distribuida).
+# Proyecto Caso 4 - Computacion Paralela y Distribuida UVG.
+# build_npb.sh copia este archivo a NPB3.4.3/NPB3.4-MPI/config/make.def.
+#
+# Es la contraparte de npb_make.def.omp: mismo algoritmo, mismos flags de
+# optimizacion, pero compilado contra los wrappers de OpenMPI en vez de
+# OpenMP. Correr el MISMO kernel en ambas variantes es lo que nos deja
+# medir el overhead de comunicacion de MPI frente a OpenMP.
+#---------------------------------------------------------------------------
+
+#---------------------------------------------------------------------------
+# Fortran + MPI (CG, EP, FT, MG, LU, BT, SP).
+# mpifort es el wrapper de OpenMPI (openmpi-bin en el contenedor).
+# -fallow-argument-mismatch: obligatorio con gfortran >= 10, y en MPI es
+# aun mas critico porque las llamadas a MPI_* mezclan tipos de buffer.
+#---------------------------------------------------------------------------
+MPIFC    = mpifort
+FFLAGS   = -O3 -march=native -fallow-argument-mismatch
+FLINK    = $(MPIFC)
+FLINKFLAGS = -O3 -march=native
+FMPI_LIB =
+FMPI_INC =
+
+#---------------------------------------------------------------------------
+# C + MPI (IS, DC).
+#---------------------------------------------------------------------------
+MPICC    = mpicc
+CFLAGS   = -O3 -march=native
+CLINK    = $(MPICC)
+CLINKFLAGS = -O3 -march=native
+CMPI_LIB =
+CMPI_INC =
+
+#---------------------------------------------------------------------------
+# Utilitarios en C (generadores, wtime).
+#---------------------------------------------------------------------------
+UCC      = gcc
+BINDIR   = ../bin
+RAND     = randi8
+WTIME    = wtime.c
+
+#---------------------------------------------------------------------------
+# No es Cray ni IBM: se dejan comentados.
+#---------------------------------------------------------------------------
+# MACHINE = -DCRAY
+# MACHINE = -DIBM

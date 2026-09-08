@@ -125,10 +125,61 @@ def parse_hpcg(text: str) -> dict:
     }
 
 
+# --- parser npb (nas parallel benchmarks) ---
+# NPB imprime al final un bloque "<KERNEL> Benchmark Completed." con lineas
+# alineadas tipo "Mop/s total = 1234.56". La variante MPI reporta
+# "Total processes" y la OpenMP "Total threads": de eso deducimos el modo,
+# que es justo lo que queremos contrastar (comunicacion mpi vs openmp).
+NPB_MOPS_RE = re.compile(r"Mop/s total\s*=\s*([\d.eE+-]+)")
+NPB_KERNEL_RE = re.compile(r"^\s*(\w+)\s+Benchmark\s+Completed", re.MULTILINE)
+NPB_CLASS_RE = re.compile(r"^\s*Class\s*=\s*(\S+)", re.MULTILINE)
+NPB_TIME_RE = re.compile(r"Time in seconds\s*=\s*([\d.eE+-]+)")
+NPB_VERIF_RE = re.compile(r"Verification\s*=\s*(SUCCESSFUL|UNSUCCESSFUL)")
+NPB_PROCS_RE = re.compile(r"Total processes\s*=\s*(\d+)")
+NPB_THREADS_RE = re.compile(r"Total threads\s*=\s*(\d+)")
+
+
+def parse_npb(text: str) -> dict:
+    m = NPB_MOPS_RE.search(text)
+    if not m:
+        return {"metric": None, "metric_name": "Mop/s", "unit": "Mop/s",
+                "valid": "FAILED", "notes": "no se encontro 'Mop/s total'"}
+    mops = float(m.group(1))
+    kernel_m = NPB_KERNEL_RE.search(text)
+    class_m = NPB_CLASS_RE.search(text)
+    time_m = NPB_TIME_RE.search(text)
+    verif_m = NPB_VERIF_RE.search(text)
+    procs_m = NPB_PROCS_RE.search(text)
+    threads_m = NPB_THREADS_RE.search(text)
+
+    if procs_m:
+        mode, parallelism = "mpi", procs_m.group(1)
+    elif threads_m:
+        mode, parallelism = "omp", threads_m.group(1)
+    else:
+        mode, parallelism = "?", "?"
+
+    valid = "OK" if (verif_m and verif_m.group(1) == "SUCCESSFUL") else "FAILED"
+    notes = (
+        f"kernel={kernel_m.group(1) if kernel_m else '?'};"
+        f"class={class_m.group(1) if class_m else '?'};"
+        f"mode={mode};parallelism={parallelism};"
+        f"time_s={time_m.group(1) if time_m else '?'}"
+    )
+    return {
+        "metric": mops,
+        "metric_name": "Mop/s",
+        "unit": "Mop/s",
+        "valid": valid,
+        "notes": notes,
+    }
+
+
 PARSERS = {
     "stream": parse_stream,
     "hpl": parse_hpl,
     "hpcg": parse_hpcg,
+    "npb": parse_npb,
 }
 
 
