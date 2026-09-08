@@ -1,0 +1,86 @@
+#META date=2026-09-08T19:48:58+00:00
+#META machine_id=adbe98c49884
+#META host_os=desconocido
+#META hostname=adbe98c49884
+#META cpu_model=desconocido
+#META arch=aarch64
+#META cores_logicos=12
+#META cores_fisicos=12
+#META mem_total_kb=8126204
+#META mem_available_kb=7432932
+#META llc_total_bytes=67108864
+#META llc_level=2
+#META cache_detection_ok=0
+#META uname=Linux adbe98c49884 6.12.76-linuxkit #1 SMP Sat Jul 11 11:18:11 UTC 2026 aarch64 aarch64 aarch64 GNU/Linux
+#META gcc_version=gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+#META mpirun_version=mpirun (Open MPI) 4.1.6
+#META openblas_path=/usr/lib/aarch64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so
+#META run_params=benchmark=npb kernel=cg class=B mode=omp parallelism=8
+#META npb_kernel=cg
+#META npb_class=B
+#META npb_mode=omp
+#META npb_binary=/work/benchmarks/NPB3.4.3/NPB3.4-OMP/bin/cg.B.x
+---
+
+
+ NAS Parallel Benchmarks (NPB3.4-OMP) - CG Benchmark
+
+ Size:       75000
+ Iterations:                     75
+ Number of available threads:     8
+
+ Initialization time =           0.338 seconds
+
+   iteration           ||r||                 zeta
+        1       0.22653849852906E-12    59.9994751578754
+        5       0.86170233333396E-15    22.6275390653890
+       10       0.87577401468936E-15    22.7108351397172
+       15       0.86427727357665E-15    22.7126844161817
+       20       0.87182191482905E-15    22.7127429721364
+       25       0.87127712809550E-15    22.7127453628458
+       30       0.86698007117860E-15    22.7127454763705
+       35       0.86409892365400E-15    22.7127454822834
+       40       0.86335217313043E-15    22.7127454826114
+       45       0.86663525249231E-15    22.7127454826304
+       50       0.86267862893058E-15    22.7127454826317
+       55       0.85985321201093E-15    22.7127454826317
+       60       0.84975803006505E-15    22.7127454826318
+       65       0.85567879159101E-15    22.7127454826317
+       70       0.85199960674156E-15    22.7127454826317
+       75       0.85171506005698E-15    22.7127454826318
+ Benchmark completed 
+ VERIFICATION SUCCESSFUL 
+ Zeta is     0.2271274548263E+02
+ Error is    0.3409942591796E-13
+
+
+ CG Benchmark Completed.
+ Class           =                        B
+ Size            =                    75000
+ Iterations      =                       75
+ Time in seconds =                     2.68
+ Total threads   =                        8
+ Avail threads   =                        8
+ Mop/s total     =                 20450.64
+ Mop/s/thread    =                  2556.33
+ Operation type  =           floating point
+ Verification    =               SUCCESSFUL
+ Version         =                    3.4.3
+ Compile date    =              08 Sep 2026
+
+ Compile options:
+    FC           = gfortran
+    FLINK        = $(FC)
+    F_LIB        = (none)
+    F_INC        = (none)
+    FFLAGS       = -O3 -march=native -fopenmp -fallow-argument...
+    FLINKFLAGS   = -O3 -march=native -fopenmp
+    RAND         = randi8
+
+
+ Please send all errors/feedbacks to:
+
+ NPB Development Team
+ npb@nas.nasa.gov
+
+

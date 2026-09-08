@@ -1,0 +1,79 @@
+#META date=2026-09-08T19:46:10+00:00
+#META machine_id=7b691a2fdd4c
+#META host_os=desconocido
+#META hostname=7b691a2fdd4c
+#META cpu_model=desconocido
+#META arch=aarch64
+#META cores_logicos=12
+#META cores_fisicos=12
+#META mem_total_kb=8126204
+#META mem_available_kb=7386116
+#META llc_total_bytes=67108864
+#META llc_level=2
+#META cache_detection_ok=0
+#META uname=Linux 7b691a2fdd4c 6.12.76-linuxkit #1 SMP Sat Jul 11 11:18:11 UTC 2026 aarch64 aarch64 aarch64 GNU/Linux
+#META gcc_version=gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+#META mpirun_version=mpirun (Open MPI) 4.1.6
+#META openblas_path=/usr/lib/aarch64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so
+#META run_params=benchmark=npb kernel=ep class=A mode=omp parallelism=2
+#META npb_kernel=ep
+#META npb_class=A
+#META npb_mode=omp
+#META npb_binary=/work/benchmarks/NPB3.4.3/NPB3.4-OMP/bin/ep.A.x
+---
+
+
+ NAS Parallel Benchmarks (NPB3.4-OMP) - EP Benchmark
+
+ Number of random numbers generated:       536870912
+ Number of available threads:                      2
+
+EP Benchmark Results:
+
+CPU Time =     0.888
+N = 2^   28
+No. Gaussian Pairs =     210832767.
+Sums =     1.682235632304649D+08    1.682195123368260D+08
+Counts:
+  0      98257395.
+  1      93827014.
+  2      17611549.
+  3       1110028.
+  4         26536.
+  5           245.
+  6             0.
+  7             0.
+  8             0.
+  9             0.
+
+
+ EP Benchmark Completed.
+ Class           =                        A
+ Size            =                536870912
+ Iterations      =                        0
+ Time in seconds =                     0.89
+ Total threads   =                        2
+ Avail threads   =                        2
+ Mop/s total     =                   604.64
+ Mop/s/thread    =                   302.32
+ Operation type  = Random numbers generated
+ Verification    =               SUCCESSFUL
+ Version         =                    3.4.3
+ Compile date    =              08 Sep 2026
+
+ Compile options:
+    FC           = gfortran
+    FLINK        = $(FC)
+    F_LIB        = (none)
+    F_INC        = (none)
+    FFLAGS       = -O3 -march=native -fopenmp -fallow-argument...
+    FLINKFLAGS   = -O3 -march=native -fopenmp
+    RAND         = randi8
+
+
+ Please send all errors/feedbacks to:
+
+ NPB Development Team
+ npb@nas.nasa.gov
+
+

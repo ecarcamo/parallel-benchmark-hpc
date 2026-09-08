@@ -74,12 +74,12 @@ for kernel in $KERNELS; do
     echo "run_npb: falta $omp_bin — se omite omp de ${kernel_lc} (corre build_npb.sh)" >&2
   fi
 
-  # --- variante MPI: un binario por nprocs (<kernel>.<class>.<np>) ---
+  # --- variante MPI: un solo binario .x, el -np se elige en runtime ---
+  mpi_bin="${MPI_BIN_DIR}/${kernel_lc}.${CLASS}.x"
   for np in "${NPROCS_ARR[@]}"; do
-    mpi_bin="${MPI_BIN_DIR}/${kernel_lc}.${CLASS}.${np}"
     if [[ ! -x "$mpi_bin" ]]; then
-      echo "run_npb: falta $mpi_bin — se omite mpi np=${np} de ${kernel_lc} (corre build_npb.sh)" >&2
-      continue
+      echo "run_npb: falta $mpi_bin — se omite mpi de ${kernel_lc} (corre build_npb.sh)" >&2
+      break
     fi
     rundir="results/npb/${kernel_lc}_${CLASS}_mpi_np_${np}_threads_1"
     mkdir -p "$rundir"

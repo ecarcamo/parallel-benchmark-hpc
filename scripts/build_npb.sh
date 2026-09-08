@@ -11,11 +11,11 @@
 # variables opcionales:
 #   NPB_KERNELS      kernels a compilar (default "cg ep")
 #   NPB_CLASS        clase / tamano del problema (default "A")
-#   NPB_MPI_NPROCS   lista de nprocs a compilar en MPI (default "1 2 4 8")
 #
-# salidas:
+# salidas (en NPB 3.4 el nprocs de MPI es de RUNTIME, no compile-time:
+# un solo binario .x por kernel/clase que acepta cualquier -np):
 #   benchmarks/NPB3.4.3/NPB3.4-OMP/bin/<kernel>.<CLASS>.x
-#   benchmarks/NPB3.4.3/NPB3.4-MPI/bin/<kernel>.<CLASS>.<np>
+#   benchmarks/NPB3.4.3/NPB3.4-MPI/bin/<kernel>.<CLASS>.x
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -27,7 +27,6 @@ MPI_DIR="${NPB_DIR}/NPB3.4-MPI"
 
 KERNELS="${NPB_KERNELS:-cg ep}"
 CLASS="${NPB_CLASS:-A}"
-MPI_NPROCS="${NPB_MPI_NPROCS:-1 2 4 8}"
 
 FORCE=0
 [[ "${1:-}" == "--force" ]] && FORCE=1
@@ -64,21 +63,21 @@ build_omp() {
   [[ -x "$bin" ]] || { echo "build_npb[omp]: no aparecio $bin — revisar make" >&2; return 1; }
 }
 
-# --- MPI: nprocs es COMPILE-TIME en NPB, un binario por cada -np ---
+# --- MPI: en NPB 3.4 el nprocs es runtime, un solo binario .x por kernel ---
+# (verificado: `make CG CLASS=A` genera bin/cg.A.x y mpirun -np N lo corre
+# con N procesos; los kernels tipo CG exigen que N sea potencia de 2, se
+# valida en runtime via get_active_nprocs).
 build_mpi() {
   local kernel_uc="$1"
   local kernel_lc="${kernel_uc,,}"
-  local np
-  for np in $MPI_NPROCS; do
-    local bin="${MPI_DIR}/bin/${kernel_lc}.${CLASS}.${np}"
-    if [[ -x "$bin" && "$FORCE" -eq 0 ]]; then
-      echo "build_npb[mpi]: ya existe $(basename "$bin") (usa --force para recompilar)"
-      continue
-    fi
-    echo "build_npb[mpi]: make ${kernel_uc} CLASS=${CLASS} NPROCS=${np}"
-    make -C "$MPI_DIR" "$kernel_uc" CLASS="$CLASS" NPROCS="$np" >/dev/null
-    [[ -x "$bin" ]] || { echo "build_npb[mpi]: no aparecio $bin — revisar make" >&2; return 1; }
-  done
+  local bin="${MPI_DIR}/bin/${kernel_lc}.${CLASS}.x"
+  if [[ -x "$bin" && "$FORCE" -eq 0 ]]; then
+    echo "build_npb[mpi]: ya existe $(basename "$bin") (usa --force para recompilar)"
+    return 0
+  fi
+  echo "build_npb[mpi]: make ${kernel_uc} CLASS=${CLASS}"
+  make -C "$MPI_DIR" "$kernel_uc" CLASS="$CLASS" >/dev/null
+  [[ -x "$bin" ]] || { echo "build_npb[mpi]: no aparecio $bin — revisar make" >&2; return 1; }
 }
 
 for kernel in $KERNELS; do

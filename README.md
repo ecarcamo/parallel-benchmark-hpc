@@ -63,11 +63,11 @@ kernel bajo memoria compartida (OpenMP) y distribuida (MPI):
 ```
 
 Los kernels, la clase y los barridos se ajustan por variables de entorno, por
-ejemplo `NPB_KERNELS="cg ep ft" NPB_CLASS=B ./scripts/build_npb.sh`. En NPB-MPI
-el número de procesos es de tiempo de compilación, por eso `build_npb.sh` genera
-un binario por cada `-np` del barrido. Los logs quedan en
-`results/npb/<kernel>_<clase>_<omp|mpi>_.../threads_<N>.log` y los consume el
-mismo `scripts/parse_results.py`.
+ejemplo `NPB_KERNELS="cg ep ft" NPB_CLASS=B ./scripts/build_npb.sh`. En NPB 3.4
+el número de procesos de MPI es de tiempo de ejecución, así que hay un solo
+binario `.x` por kernel/clase y `run_npb.sh` lo corre con distintos `-np`. Los
+logs quedan en `results/npb/<kernel>_<clase>_<omp|mpi>_.../threads_<N>.log` y los
+consume el mismo `scripts/parse_results.py`.
 
 ## Resultados y análisis
 
