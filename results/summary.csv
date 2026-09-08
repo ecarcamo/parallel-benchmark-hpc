@@ -1,0 +1,13 @@
+benchmark,threads,procs,metric,metric_name,unit,valid,machine,notes
+hpcg,8,1,3.03522,GFLOP/s,GFLOP/s,OK,581449b0732d,exec_time_s=6.58039;no_submission_valida_top500
+hpcg,4,2,5.28953,GFLOP/s,GFLOP/s,OK,581449b0732d,exec_time_s=5.91604;no_submission_valida_top500
+hpcg,2,4,6.02013,GFLOP/s,GFLOP/s,OK,581449b0732d,exec_time_s=5.31132;no_submission_valida_top500
+hpcg,2,4,6.06666,GFLOP/s,GFLOP/s,OK,581449b0732d,exec_time_s=8.29579;no_submission_valida_top500
+hpcg,1,8,6.4566,GFLOP/s,GFLOP/s,OK,581449b0732d,exec_time_s=5.10101;no_submission_valida_top500
+hpl,1,1,55.365,Gflops,Gflops,OK,171933e146f2,tag=WR11R2C4;N=4416;NB=192;P=1;Q=1;time_s=1.04;residual=PASSED
+hpl,2,2,90.294,Gflops,Gflops,OK,171933e146f2,tag=WR11R2C4;N=4416;NB=192;P=1;Q=2;time_s=0.64;residual=PASSED
+hpl,4,4,121.93,Gflops,Gflops,OK,171933e146f2,tag=WR11R2C4;N=4416;NB=192;P=2;Q=2;time_s=0.47;residual=PASSED
+stream,1,,27989.7,Triad,MB/s,OK,desconocido,Copy=32336.4;Scale=28092.1;Add=26782.4;Triad=27989.7
+stream,2,,32593.5,Triad,MB/s,OK,desconocido,Copy=39506.8;Scale=31387.0;Add=30598.8;Triad=32593.5
+stream,4,,31106.3,Triad,MB/s,OK,desconocido,Copy=44972.4;Scale=28458.7;Add=30821.6;Triad=31106.3
+stream,8,,29686.4,Triad,MB/s,OK,desconocido,Copy=27052.8;Scale=26305.7;Add=29480.6;Triad=29686.4

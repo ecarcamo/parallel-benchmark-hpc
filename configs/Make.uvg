@@ -1,0 +1,68 @@
+#
+#  Variante de HPCG 3.1 para este proyecto: ubuntu 24.04 + openmpi + openmp.
+#  derivado de setup/Make.MPI_GCC_OMP del repo oficial de HPCG (ese arch
+#  ya trae MPI y OpenMP habilitados por defecto, verificado leyendo el
+#  archivo real — no hizo falta partir de Make.Linux_MPI y desactivar
+#  -DHPCG_NO_OPENMP a mano como se penso originalmente).
+#
+# ----------------------------------------------------------------------
+SHELL        = /bin/sh
+#
+CD           = cd
+CP           = cp
+LN_S         = ln -s -f
+MKDIR        = mkdir -p
+RM           = /bin/rm -f
+TOUCH        = touch
+#
+# ----------------------------------------------------------------------
+# - HPCG Directory Structure / HPCG library ------------------------------
+# ----------------------------------------------------------------------
+#
+TOPdir       = .
+SRCdir       = $(TOPdir)/src
+INCdir       = $(TOPdir)/src
+BINdir       = $(TOPdir)/bin
+#
+# ----------------------------------------------------------------------
+# - Message Passing library (MPI) --------------------------------------
+# ----------------------------------------------------------------------
+# vacios: usamos mpicxx como CXX y ya inyecta -I/-L/-l de mpi solo
+# (verificado con `mpicc -show` para el caso analogo de hpl).
+#
+MPdir        =
+MPinc        =
+MPlib        =
+#
+# ----------------------------------------------------------------------
+# - HPCG includes / libraries / specifics -------------------------------
+# ----------------------------------------------------------------------
+#
+HPCG_INCLUDES = -I$(INCdir) -I$(INCdir)/$(arch) $(MPinc)
+HPCG_LIBS     =
+#
+# MPI y OpenMP quedan habilitados (comportamiento por defecto del arch
+# base, HPCG_OPTS vacio == sin -DHPCG_NO_MPI ni -DHPCG_NO_OPENMP).
+#
+HPCG_OPTS     =
+#
+HPCG_DEFS     = $(HPCG_OPTS) $(HPCG_INCLUDES)
+#
+# ----------------------------------------------------------------------
+# - Compilers / linkers - Optimization flags ---------------------------
+# ----------------------------------------------------------------------
+# OJO: el arch original trae -ffast-math. Lo QUITAMOS: HPCG valida
+# convergencia del gradiente conjugado y -ffast-math puede llevar el
+# resultado a INVALID por relajar el redondeo de punto flotante.
+#
+CXX          = mpicxx
+CXXFLAGS     = $(HPCG_DEFS) -O3 -march=native -fopenmp
+#
+LINKER       = $(CXX)
+LINKFLAGS    = $(CXXFLAGS)
+#
+ARCHIVER     = ar
+ARFLAGS      = r
+RANLIB       = ranlib
+#
+# ----------------------------------------------------------------------

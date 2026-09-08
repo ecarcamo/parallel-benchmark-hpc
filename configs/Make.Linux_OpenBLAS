@@ -1,0 +1,98 @@
+#
+#  Variante de HPL 2.3 para este proyecto: ubuntu 24.04 + openmpi + openblas.
+#  derivado de setup/Make.Linux_PII_FBLAS del tarball oficial de HPL 2.3.
+#  las diferencias contra la plantilla original estan comentadas abajo,
+#  fueron verificadas corriendo el contenedor real (no son suposiciones).
+#
+# ----------------------------------------------------------------------
+# - shell --------------------------------------------------------------
+# ----------------------------------------------------------------------
+#
+SHELL        = /bin/sh
+#
+CD           = cd
+CP           = cp
+LN_S         = ln -s
+MKDIR        = mkdir
+RM           = /bin/rm -f
+TOUCH        = touch
+#
+# ----------------------------------------------------------------------
+# - Platform identifier ------------------------------------------------
+# ----------------------------------------------------------------------
+#
+ARCH         = Linux_OpenBLAS
+#
+# ----------------------------------------------------------------------
+# - HPL Directory Structure / HPL library ------------------------------
+# ----------------------------------------------------------------------
+# TOPdir se pasa desde build_hpl.sh via `make arch=... TOPdir=...` porque
+# depende de donde se descomprima el tarball (no asumimos $(HOME)/hpl).
+#
+TOPdir       = $(HPL_TOPDIR)
+INCdir       = $(TOPdir)/include
+BINdir       = $(TOPdir)/bin/$(ARCH)
+LIBdir       = $(TOPdir)/lib/$(ARCH)
+#
+HPLlib       = $(LIBdir)/libhpl.a
+#
+# ----------------------------------------------------------------------
+# - Message Passing library (MPI) --------------------------------------
+# ----------------------------------------------------------------------
+# se dejan vacios: usamos mpicc como CC/LINKER y el wrapper ya inyecta
+# los -I/-L/-l de mpi correctos (verificado con `mpicc -show`).
+#
+MPdir        =
+MPinc        =
+MPlib        =
+#
+# ----------------------------------------------------------------------
+# - Linear Algebra library (BLAS) ---------------------------------------
+# ----------------------------------------------------------------------
+# openblas en ubuntu 24.04 ya es alcanzable por gcc/ld sin -I/-L
+# explicitos (multiarch), verificado en el contenedor real.
+#
+LAdir        =
+LAinc        =
+LAlib        = -lopenblas -lpthread -lm
+#
+# ----------------------------------------------------------------------
+# - F77 / C interface --------------------------------------------------
+# ----------------------------------------------------------------------
+# OJO: la plantilla original trae -DAdd__ (doble guion bajo, pensado
+# para f2c). gfortran/openblas exponen los simbolos con UN solo guion
+# bajo (dgemm_), asi que aqui va -DAdd_ o el link falla con
+# "undefined reference to dgemm__".
+#
+F2CDEFS      = -DAdd_ -DF77_INTEGER=int -DStringSunStyle
+#
+# ----------------------------------------------------------------------
+# - HPL includes / libraries / specifics -------------------------------
+# ----------------------------------------------------------------------
+#
+HPL_INCLUDES = -I$(INCdir) -I$(INCdir)/$(ARCH) $(LAinc) $(MPinc)
+HPL_LIBS     = $(HPLlib) $(LAlib) $(MPlib)
+#
+HPL_OPTS     =
+#
+HPL_DEFS     = $(F2CDEFS) $(HPL_OPTS) $(HPL_INCLUDES)
+#
+# ----------------------------------------------------------------------
+# - Compilers / linkers - Optimization flags ---------------------------
+# ----------------------------------------------------------------------
+# CC/LINKER = mpicc, NO /usr/bin/gcc + g77 (g77 no existe en esta imagen,
+# verificado con `which g77` -> nada). mpicc ya invoca gcc por debajo y
+# enlaza mpi correctamente.
+#
+CC           = mpicc
+CCNOOPT      = $(HPL_DEFS)
+CCFLAGS      = $(HPL_DEFS) -O3 -march=native -funroll-loops -W -Wall
+#
+LINKER       = mpicc
+LINKFLAGS    = $(CCFLAGS)
+#
+ARCHIVER     = ar
+ARFLAGS      = r
+RANLIB       = ranlib
+#
+# ----------------------------------------------------------------------

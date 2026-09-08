@@ -1,0 +1,7 @@
+# fuerza LF en lo que se ejecuta dentro del contenedor linux, sin importar
+# el autocrlf de cada quien en windows. si no, el shebang se rompe
+# (bash interpreta '#!/usr/bin/env bash\r' como un binario que no existe).
+*.sh text eol=lf
+*.py text eol=lf
+Dockerfile text eol=lf
+*.dat text eol=lf
