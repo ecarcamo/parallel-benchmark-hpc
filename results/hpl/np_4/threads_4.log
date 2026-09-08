@@ -1,0 +1,83 @@
+#META date=2026-09-08T06:13:32+00:00
+#META machine_id=171933e146f2
+#META host_os=desconocido
+#META hostname=171933e146f2
+#META cpu_model=AMD Ryzen 7 8845HS w/ Radeon 780M Graphics
+#META arch=x86_64
+#META cores_logicos=16
+#META cores_fisicos=8
+#META mem_total_kb=7747776
+#META mem_available_kb=6831636
+#META llc_total_bytes=16777216
+#META llc_level=3
+#META cache_detection_ok=1
+#META uname=Linux 171933e146f2 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+#META gcc_version=gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+#META mpirun_version=mpirun (Open MPI) 4.1.6
+#META openblas_path=/usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so
+#META run_params=nprocs=4
+#META hpl_binary=/work/benchmarks/hpl-2.3/bin/Linux_OpenBLAS/xhpl
+---
+================================================================================
+HPLinpack 2.3  --  High-Performance Linpack benchmark  --   December 2, 2018
+Written by A. Petitet and R. Clint Whaley,  Innovative Computing Laboratory, UTK
+Modified by Piotr Luszczek, Innovative Computing Laboratory, UTK
+Modified by Julien Langou, University of Colorado Denver
+================================================================================
+
+An explanation of the input/output parameters follows:
+T/V    : Wall time / encoded variant.
+N      : The order of the coefficient matrix A.
+NB     : The partitioning blocking factor.
+P      : The number of process rows.
+Q      : The number of process columns.
+Time   : Time in seconds to solve the linear system.
+Gflops : Rate of execution for solving the linear system.
+
+The following parameter values will be used:
+
+N      :    4416 
+NB     :     192 
+PMAP   : Row-major process mapping
+P      :       2 
+Q      :       2 
+PFACT  :   Crout 
+NBMIN  :       4 
+NDIV   :       2 
+RFACT  :   Right 
+BCAST  :  1ringM 
+DEPTH  :       1 
+SWAP   : Mix (threshold = 64)
+L1     : transposed form
+U      : transposed form
+EQUIL  : yes
+ALIGN  : 8 double precision words
+
+--------------------------------------------------------------------------------
+
+- The matrix A is randomly generated for each test.
+- The following scaled residual check will be computed:
+      ||Ax-b||_oo / ( eps * ( || x ||_oo * || A ||_oo + || b ||_oo ) * N )
+- The relative machine precision (eps) is taken to be               1.110223e-16
+- Computational tests pass if scaled residuals are less than                16.0
+
+================================================================================
+T/V                N    NB     P     Q               Time                 Gflops
+--------------------------------------------------------------------------------
+WR11R2C4        4416   192     2     2               0.47             1.2193e+02
+HPL_pdgesv() start time Tue Sep  8 06:13:32 2026
+
+HPL_pdgesv() end time   Tue Sep  8 06:13:33 2026
+
+--------------------------------------------------------------------------------
+||Ax-b||_oo/(eps*(||A||_oo*||x||_oo+||b||_oo)*N)=   2.89083389e-03 ...... PASSED
+================================================================================
+
+Finished      1 tests with the following results:
+              1 tests completed and passed residual checks,
+              0 tests completed and failed residual checks,
+              0 tests skipped because of illegal input values.
+--------------------------------------------------------------------------------
+
+End of Tests.
+================================================================================
