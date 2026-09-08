@@ -4,3 +4,13 @@ build/
 .venv/
 __pycache__/
 *.py[cod]
+TEMP/*
+
+# fuentes descargadas y binarios compilados de los benchmarks
+# (se regeneran con fetch_benchmarks.sh / build_*.sh, no se versionan)
+benchmarks/hpl-2.3/
+benchmarks/hpl-2.3.tar.gz
+benchmarks/hpcg/
+benchmarks/NPB3.4.3.tar.gz
+benchmarks/stream.c
+benchmarks/stream_*

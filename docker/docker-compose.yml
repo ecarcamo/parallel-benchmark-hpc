@@ -10,3 +10,6 @@ services:
     working_dir: /work
     stdin_open: true
     tty: true
+    # el default de docker (64mb) se queda corto para la comunicacion
+    # intra-nodo de openmpi en hpl/hpcg, por eso lo subimos
+    shm_size: 2gb
