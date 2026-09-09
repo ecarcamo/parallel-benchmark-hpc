@@ -1,0 +1,35 @@
+#META date=2026-09-08T22:11:23-06:00
+#META machine_id=escu
+#META host_os=desconocido
+#META hostname=escu
+#META cpu_model=13th Gen Intel(R) Core(TM) i9-13980HX
+#META arch=x86_64
+#META cores_logicos=32
+#META cores_fisicos=24
+#META mem_total_kb=15966084
+#META mem_available_kb=5927824
+#META llc_total_bytes=37748736
+#META llc_level=3
+#META cache_detection_ok=1
+#META uname=Linux escu 7.2.2-1-cachyos #1 SMP PREEMPT_DYNAMIC Fri, 28 Aug 2026 11:45:06 +0000 x86_64 GNU/Linux
+#META gcc_version=gcc (GCC) 16.2.1 20260810
+#META mpirun_version=desconocido
+#META openblas_path=desconocido
+#META run_params=benchmark=nbody threads=1
+#META app=nbody
+#META app_binary=/home/escu/Documentos/Universidad/Semestres/8voSemestre/PARALELA/parallel-benchmark-hpc/apps/nbody
+---
+=== NBODY RESULT ===
+app=nbody
+n_bodies=8192
+steps=10
+threads=1
+flops_per_interaction=20
+total_flops=1.342177e+10
+time_s=0.941579
+gflops=14.2545
+bytes_dram=2.621440e+06
+arithmetic_intensity=5120.0000
+checksum=-1.610824e+03
+bound=compute
+=== END NBODY RESULT ===

@@ -175,11 +175,56 @@ def parse_npb(text: str) -> dict:
     }
 
 
+# --- parser apps propias (nbody y stencil) ---
+# ambas imprimen un bloque "key=value" entre "=== <APP> RESULT ===" y su
+# "=== END ... ===". Leemos los pares directamente: es nuestro formato, no
+# hay que adivinar regex de terceros como en hpl/hpcg.
+APP_KV_RE = re.compile(r"^(\w+)=(\S+)$", re.MULTILINE)
+
+
+def _parse_app(text: str, expected_app: str) -> dict:
+    kv = {}
+    for m in APP_KV_RE.finditer(text):
+        kv[m.group(1)] = m.group(2)
+    gflops = kv.get("gflops")
+    if gflops is None:
+        return {"metric": None, "metric_name": "GFLOP/s", "unit": "GFLOP/s",
+                "valid": "FAILED", "notes": f"no se encontro bloque {expected_app} RESULT"}
+    # notas: guardamos intensidad aritmetica (eje X del Roofline), tiempo y
+    # el tamano del problema, que es lo que consume analysis/roofline.py.
+    parts = [f"bound={kv.get('bound', '?')}",
+             f"ai={kv.get('arithmetic_intensity', '?')}",
+             f"time_s={kv.get('time_s', '?')}"]
+    if "bandwidth_gbps" in kv:
+        parts.append(f"bandwidth_gbps={kv['bandwidth_gbps']}")
+    if "n_bodies" in kv:
+        parts.append(f"n_bodies={kv['n_bodies']};steps={kv.get('steps', '?')}")
+    if "grid_n" in kv:
+        parts.append(f"grid_n={kv['grid_n']};steps={kv.get('steps', '?')}")
+    return {
+        "metric": float(gflops),
+        "metric_name": "GFLOP/s",
+        "unit": "GFLOP/s",
+        "valid": "OK",
+        "notes": ";".join(parts),
+    }
+
+
+def parse_nbody(text: str) -> dict:
+    return _parse_app(text, "NBODY")
+
+
+def parse_stencil(text: str) -> dict:
+    return _parse_app(text, "STENCIL")
+
+
 PARSERS = {
     "stream": parse_stream,
     "hpl": parse_hpl,
     "hpcg": parse_hpcg,
     "npb": parse_npb,
+    "nbody": parse_nbody,
+    "stencil": parse_stencil,
 }
 
 

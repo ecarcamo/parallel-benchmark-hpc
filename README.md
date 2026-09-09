@@ -69,6 +69,29 @@ binario `.x` por kernel/clase y `run_npb.sh` lo corre con distintos `-np`. Los
 logs quedan en `results/npb/<kernel>_<clase>_<omp|mpi>_.../threads_<N>.log` y los
 consume el mismo `scripts/parse_results.py`.
 
+### Apps propias: N-body y stencil (el diferenciador)
+
+Además de los benchmarks estándar construimos dos aplicaciones paralelas
+propias que caen en extremos opuestos del modelo Roofline, para medir en
+carne propia por qué el cómputo y la memoria imponen techos distintos:
+
+- `apps/nbody.c` — simulación gravitacional todos-contra-todos O(n²).
+  **Compute-bound**: intensidad aritmética altísima, escala casi lineal con
+  los hilos. Se comporta como HPL.
+- `apps/stencil.c` — difusión de calor 3D por Jacobi (stencil de 7 puntos).
+  **Memory-bound**: intensidad aritmética < 1 flop/byte, satura el ancho de
+  banda y apenas escala. Se comporta como HPCG.
+
+```bash
+./scripts/build_apps.sh   # compila apps/nbody y apps/stencil
+./scripts/run_apps.sh      # barre 1,2,4,8 hilos y escribe los logs
+```
+
+Parámetros por variables de entorno (ver los `.c`): `NBODY_N`, `NBODY_STEPS`,
+`STENCIL_N`, `STENCIL_STEPS`, `APPS_THREADS_LIST`. Los logs quedan en
+`results/nbody/` y `results/stencil/` con el mismo header `#META`, así que
+los consume el mismo `scripts/parse_results.py`.
+
 ## Resultados y análisis
 
 Los logs van a `results/<benchmark>/threads_<N>.log`. Una vez que cada responsable
@@ -79,9 +102,17 @@ CSV consolidado con:
 python3 scripts/parse_results.py
 ```
 
-El resultado es `results/summary.csv`; las gráficas y el notebook de Roofline se
-guardan en `analysis/`. Los `.log` y CSV se versionan porque son la evidencia de
-las mediciones.
+El resultado es `results/summary.csv`. A partir de ese CSV, el análisis
+Roofline y las gráficas de la presentación se generan con:
+
+```bash
+python3 analysis/roofline.py
+```
+
+Esto produce en `analysis/`: `roofline.png` (el modelo que une todos los
+benchmarks), `scaling_apps.png` (speedup nbody vs stencil), `hpl_vs_hpcg.png`
+(la brecha pico vs realista) y `npb_omp_vs_mpi.png` (overhead OpenMP vs MPI).
+Los `.log` y CSV se versionan porque son la evidencia de las mediciones.
 
 ## Máquina de referencia
 
