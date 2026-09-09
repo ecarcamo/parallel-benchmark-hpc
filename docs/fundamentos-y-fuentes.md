@@ -163,7 +163,7 @@ superpusimos en el Roofline.
 | Predicción de la teoría | Lo que medimos nosotros |
 | --- | --- |
 | HPCG es memory-bound porque exige > 4 Byte/FLOP (AI < 0.25) | Nuestro **stencil** mide AI ≈ 0.33 flop/byte y cae sobre la recta de ancho de banda, junto a HPCG |
-| Una carga compute-bound escala con los cores; una memory-bound se satura | **N-body** escala ~3× de 1→8 hilos; **stencil** solo ~1.3× (satura el ancho de banda) |
+| Una carga compute-bound escala con los cores; una memory-bound se satura | **N-body** escala 5.6× de 1→8 hilos (casi ideal); **stencil** se estanca en 3.6× tras 4 hilos al saturar el ancho de banda |
 | El pico teórico no se alcanza en cargas reales | El Capitan sostiene 64 % en HPL y 0.96 % en HPCG; nuestro contraste HPL-vs-HPCG reproduce la misma forma a escala |
 
 Esta es la parte de **creatividad** de la rúbrica: cerramos el círculo entre

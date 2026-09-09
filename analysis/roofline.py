@@ -120,11 +120,34 @@ def app_points(rows, app):
 # 1. Roofline
 # ---------------------------------------------------------------------------
 
+def app_peak_bandwidth(rows):
+    """maximo ancho de banda medido por el stencil (GB/s) en el barrido."""
+    bws = [to_float(note_get(r["notes"], "bandwidth_gbps"))
+           for r in rows if r["benchmark"] == "stencil"]
+    bws = [b for b in bws if b]
+    return max(bws) if bws else None
+
+
 def plot_roofline(rows):
-    peak_bw = stream_peak_gbps(rows)      # GB/s
-    peak_flops = hpl_peak_gflops(rows)    # GFLOP/s
+    # Techos EMPIRICOS: usamos el mayor valor realmente medido en la maquina
+    # de referencia, no un unico benchmark. Asi el Roofline es auto-consistente
+    # y ningun punto medido queda "flotando" por encima de su techo.
+    #   - Techo de ancho de banda = max(STREAM Triad, ancho de banda del stencil).
+    #     En el M4 Pro (memoria unificada) el stencil sostiene mas que la vieja
+    #     corrida de STREAM, asi que marca el piso real del ancho de banda.
+    #   - Techo de computo = max(HPL, nbody). nbody puede superar a HPL por ser
+    #     un kernel mas simple; tomamos el mayor como pico empirico.
+    stream_bw = stream_peak_gbps(rows)
+    stencil_bw = app_peak_bandwidth(rows)
+    peak_bw = max([b for b in (stream_bw, stencil_bw) if b] or [0]) or None
+
+    hpl = hpl_peak_gflops(rows)
+    nbody_pts = app_points(rows, "nbody")
+    nbody_peak = max((p["gflops"] for p in nbody_pts.values()), default=None)
+    peak_flops = max([g for g in (hpl, nbody_peak) if g] or [0]) or None
+
     if not peak_bw or not peak_flops:
-        print("roofline: faltan STREAM o HPL en el CSV, no se dibuja")
+        print("roofline: faltan datos de ancho de banda o computo, no se dibuja")
         return
 
     ridge = peak_flops / peak_bw  # AI del punto de quiebre (flop/byte)
@@ -145,10 +168,10 @@ def plot_roofline(rows):
 
     # etiquetas de los techos
     ax.text(ai_min * 1.4, peak_bw * ai_min * 1.5,
-            f"Ancho de banda\n{peak_bw:.1f} GB/s (STREAM)",
+            f"Ancho de banda\n{peak_bw:.0f} GB/s (medido)",
             color=C_CEIL, rotation=34, fontsize=10.5, va="bottom")
     ax.text(ai_max * 0.28, peak_flops * 1.12,
-            f"Techo de computo — {peak_flops:.0f} GFLOP/s (HPL)",
+            f"Techo de computo — {peak_flops:.0f} GFLOP/s (pico medido)",
             color=C_CEIL, ha="right", fontsize=10.5)
     ax.annotate(f"punto de quiebre\nAI = {ridge:.1f} flop/byte",
                 xy=(ridge, peak_flops), xytext=(ridge * 0.9, peak_flops * 0.28),
@@ -176,19 +199,26 @@ def plot_roofline(rows):
     st = app_points(rows, "stencil")
     if nb:
         t = max(nb)
-        # AI de nbody sale enorme (muy compute-bound); la fijamos al borde
-        # derecho para que sea legible sin salirse del eje.
-        ax.plot([ai_max * 0.5], [nb[t]["gflops"]], "D", color=C_COMPUTE, ms=13,
+        # AI de nbody sale enorme (muy compute-bound); la fijamos hacia el
+        # borde derecho para que sea legible sin salirse del eje. La etiqueta
+        # va DEBAJO del punto para no chocar con el rotulo COMPUTE-BOUND.
+        nb_x = ai_max * 0.30
+        ax.plot([nb_x], [nb[t]["gflops"]], "D", color=C_COMPUTE, ms=13,
                 zorder=6, markeredgecolor="white", markeredgewidth=1.2)
         ax.annotate(f"N-body (nuestra)\n{nb[t]['gflops']:.0f} GFLOP/s @ {t}h",
-                    xy=(ai_max * 0.5, nb[t]["gflops"]),
-                    xytext=(ai_max * 0.5, nb[t]["gflops"] * 1.7),
+                    xy=(nb_x, nb[t]["gflops"]),
+                    xytext=(nb_x, nb[t]["gflops"] * 0.42),
                     fontsize=10, ha="center", color=C_COMPUTE, fontweight="bold")
     if st:
         t = max(st)
-        scatter(st[t]["ai"], st[t]["gflops"], C_MEMORY,
-                f"Stencil (nuestra)\n{st[t]['gflops']:.0f} GFLOP/s @ {t}h",
-                marker="D", dy=1.9)
+        sx, sy = st[t]["ai"], st[t]["gflops"]
+        ax.plot([sx], [sy], "D", color=C_MEMORY, ms=13, zorder=6,
+                markeredgecolor="white", markeredgewidth=1.2)
+        # etiqueta abajo-izquierda del punto, lejos del punto de quiebre
+        ax.annotate(f"Stencil (nuestra)\n{sy:.0f} GFLOP/s @ {t}h",
+                    xy=(sx, sy), xytext=(sx * 0.42, sy * 1.9),
+                    fontsize=10, ha="center", color=C_MEMORY, fontweight="bold",
+                    arrowprops=dict(arrowstyle="-", color=C_MEMORY, lw=1, alpha=.5))
 
     ax.set_xlim(ai_min, ai_max)
     ax.set_ylim(1, peak_flops * 3)
@@ -240,7 +270,7 @@ def plot_scaling(rows):
 
     ax.set_xlabel("Hilos OpenMP")
     ax.set_ylabel("Speedup (x)")
-    ax.set_title("Compute-bound escala; memory-bound se ahoga",
+    ax.set_title("Compute-bound sigue escalando; memory-bound se estanca",
                  fontweight="bold", pad=12)
     ax.set_xticks(threads)
     ax.legend(frameon=False, loc="upper left")
