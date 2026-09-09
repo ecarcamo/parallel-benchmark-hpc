@@ -41,6 +41,15 @@ C_RIDGE = "#e0a458"     # ambar punto de quiebre
 C_OMP = "#2e86ab"
 C_MPI = "#d1495b"
 
+# Ancho de banda PICO TEORICO de la maquina de referencia (Apple M4 Pro):
+# 273 GB/s, dato OFICIAL de Apple (newsroom, oct. 2024). Lo usamos como techo
+# de memoria del Roofline porque es una fuente INDEPENDIENTE de nuestros
+# kernels: asi el punto memory-bound (stencil) NO cae sobre el techo "por
+# construccion" — se ve la fraccion real del pico que alcanza (~58 %).
+# La vieja corrida de STREAM (32.6 GB/s, machine "desconocido") no es
+# representativa del M4 Pro (memoria unificada) y por eso no se usa como techo.
+PEAK_BW_SPEC_GBPS = 273.0
+
 plt.rcParams.update({
     "figure.dpi": 130,
     "font.size": 12,
@@ -129,30 +138,28 @@ def app_peak_bandwidth(rows):
 
 
 def plot_roofline(rows):
-    # Techos EMPIRICOS: usamos el mayor valor realmente medido en la maquina
-    # de referencia, no un unico benchmark. Asi el Roofline es auto-consistente
-    # y ningun punto medido queda "flotando" por encima de su techo.
-    #   - Techo de ancho de banda = max(STREAM Triad, ancho de banda del stencil).
-    #     En el M4 Pro (memoria unificada) el stencil sostiene mas que la vieja
-    #     corrida de STREAM, asi que marca el piso real del ancho de banda.
-    #   - Techo de computo = max(HPL, nbody). nbody puede superar a HPL por ser
-    #     un kernel mas simple; tomamos el mayor como pico empirico.
-    stream_bw = stream_peak_gbps(rows)
-    stencil_bw = app_peak_bandwidth(rows)
-    peak_bw = max([b for b in (stream_bw, stencil_bw) if b] or [0]) or None
+    # Techo de ANCHO DE BANDA: pico teorico publicado del M4 Pro (fuente
+    # INDEPENDIENTE, ver PEAK_BW_SPEC_GBPS). Evita la circularidad de usar el
+    # ancho de banda del propio stencil como techo. El stencil queda POR
+    # DEBAJO, mostrando que fraccion del pico sostiene (~58 %).
+    peak_bw = PEAK_BW_SPEC_GBPS
+    stencil_bw = app_peak_bandwidth(rows)  # solo para reportar en consola
 
+    # Techo de COMPUTO = max(HPL, nbody) medido. nbody puede superar a HPL por
+    # ser un kernel mas simple; tomamos el mayor como pico empirico medido.
     hpl = hpl_peak_gflops(rows)
     nbody_pts = app_points(rows, "nbody")
     nbody_peak = max((p["gflops"] for p in nbody_pts.values()), default=None)
     peak_flops = max([g for g in (hpl, nbody_peak) if g] or [0]) or None
 
-    if not peak_bw or not peak_flops:
-        print("roofline: faltan datos de ancho de banda o computo, no se dibuja")
+    if not peak_flops:
+        print("roofline: faltan datos de computo, no se dibuja")
         return
 
     ridge = peak_flops / peak_bw  # AI del punto de quiebre (flop/byte)
 
-    fig, ax = plt.subplots(figsize=(9.5, 6.2))
+    # Formato panoramico: la grafica ocupa una escena 16:10 sin cortar ejes.
+    fig, ax = plt.subplots(figsize=(11.8, 5.35))
     ax.set_xscale("log")
     ax.set_yscale("log")
 
@@ -168,7 +175,7 @@ def plot_roofline(rows):
 
     # etiquetas de los techos
     ax.text(ai_min * 1.4, peak_bw * ai_min * 1.5,
-            f"Ancho de banda\n{peak_bw:.0f} GB/s (medido)",
+            f"Ancho de banda\n{peak_bw:.0f} GB/s (pico M4 Pro)",
             color=C_CEIL, rotation=34, fontsize=10.5, va="bottom")
     ax.text(ai_max * 0.28, peak_flops * 1.12,
             f"Techo de computo — {peak_flops:.0f} GFLOP/s (pico medido)",
@@ -187,7 +194,7 @@ def plot_roofline(rows):
                     fontsize=10.5, ha="center", color=color, fontweight="bold")
 
     # --- puntos de los benchmarks estandar ---
-    scatter(hpl_intensity(rows), peak_flops, C_COMPUTE, "HPL", dy=0.55)
+    scatter(hpl_intensity(rows), hpl, C_COMPUTE, "HPL", dy=0.55)
 
     # HPCG: intensidad aritmetica baja tipica de SpMV disperso (~0.2 flop/byte,
     # Dongarra et al. 2016). Memory-bound -> cae sobre la recta.
@@ -239,8 +246,10 @@ def plot_roofline(rows):
     out = OUT / "roofline.png"
     fig.savefig(out)
     plt.close(fig)
-    print(f"roofline: {out}  (BW={peak_bw:.1f} GB/s, pico={peak_flops:.0f} GFLOP/s, "
-          f"quiebre AI={ridge:.1f})")
+    frac = 100.0 * stencil_bw / peak_bw if stencil_bw else None
+    frac_txt = f", stencil sostiene {frac:.0f}% del pico" if frac else ""
+    print(f"roofline: {out}  (BW techo={peak_bw:.0f} GB/s pico M4 Pro, "
+          f"computo={peak_flops:.0f} GFLOP/s medido, quiebre AI={ridge:.2f}{frac_txt})")
 
 
 # ---------------------------------------------------------------------------
@@ -294,16 +303,16 @@ def plot_hpl_vs_hpcg(rows):
     frac = 100.0 * hpcg / hpl
 
     fig, ax = plt.subplots(figsize=(7.5, 5.6))
-    bars = ax.bar(["HPL\n(pico teorico,\nel de las noticias)",
-                   "HPCG\n(carga realista,\nmemory-bound)"],
+    bars = ax.bar(["HPL\n(computo denso,\nmaximo medido)",
+                   "HPCG\n(carga representativa,\nmemory-bound)"],
                   [hpl, hpcg], color=[C_COMPUTE, C_MEMORY], width=0.6)
     for b, v in zip(bars, [hpl, hpcg]):
         ax.annotate(f"{v:.1f}", (b.get_x() + b.get_width() / 2, v),
                     textcoords="offset points", xytext=(0, 6),
                     ha="center", fontsize=13, fontweight="bold")
     ax.set_ylabel("GFLOP/s")
-    ax.set_title(f"La misma maquina rinde {frac:.0f}% en una carga real\n"
-                 f"(HPCG es {hpl/hpcg:.0f}x mas lento que su propio pico)",
+    ax.set_title(f"HPCG entrega {frac:.0f}% del rendimiento medido con HPL\n"
+                 f"(una brecha de {hpl/hpcg:.0f}x en la misma maquina)",
                  fontweight="bold", fontsize=12.5, pad=12)
     ax.set_ylim(0, hpl * 1.2)
     fig.tight_layout()

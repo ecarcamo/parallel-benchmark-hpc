@@ -1,9 +1,8 @@
 # Presentación web — Caso 4
 
-Página única, animada y autocontenida (`index.html`). Sin build, sin
-dependencias que instalar. Narrativa cinematográfica tipo landing científica:
-asombro → la brecha del 1% → Roofline → apps propias → ciencia → cuellos de
-botella.
+Presentación web en ocho escenas, sin build ni dependencias que instalar.
+Combina un modo de exposición a pantalla completa con un apéndice separado
+para responder preguntas sin interrumpir la narrativa principal.
 
 ## Cómo abrirla
 
@@ -18,8 +17,20 @@ python3 -m http.server 8000
 **Opción B (rápida):** doble clic en `presentacion/index.html`. Funciona igual;
 solo el video de YouTube necesita conexión a internet.
 
-> Presentar en **pantalla completa** (F11 en Chrome/Firefox) para el efecto
-> máximo. Usar un navegador actual (Chrome, Firefox o Edge).
+## Controles durante la exposición
+
+- `→`, `↓`, `Espacio` o `Page Down`: escena siguiente.
+- `←`, `↑` o `Page Up`: escena anterior.
+- `Home` / `End`: apertura / cierre.
+- `F`: entrar o salir de pantalla completa.
+- También se puede usar la barra de controles inferior o los puntos laterales.
+
+En el cierre, **Abrir respaldo para preguntas** muestra instrumentos, NPB,
+cronología y fuentes. Este contenido está deliberadamente fuera del recorrido
+de ocho escenas.
+
+Usar un navegador actual (Chrome, Firefox o Edge). Para el efecto completo,
+presionar **Presentar** antes de comenzar.
 
 ## De dónde salen los datos
 
@@ -32,13 +43,17 @@ solo el video de YouTube necesita conexión a internet.
 
 ## Detalles técnicos
 
-- **Animaciones:** aparición al hacer scroll (IntersectionObserver) y
-  contadores numéricos. El fondo del hero es una simulación de partículas
-  N-body en `<canvas>` — temáticamente, nuestra propia app.
+- **Animaciones:** entrada por escena, contadores, barras de rendimiento y una
+  simulación N-body en `<canvas>` como fondo temático.
+- **Narrativa:** promesa → caída → evidencia propia → Roofline → escalamiento →
+  aplicación científica → acciones → conclusión.
+- **Dos modos de uso:** navegación escénica para exponer y apéndice para la
+  discusión técnica.
 - **Robustez:** si el JS falla o está deshabilitado, el contenido se muestra
   igual (nunca queda en blanco); respeta `prefers-reduced-motion`; y hay una
   red de seguridad que revela cualquier bloque que no se haya animado.
-- **Un solo archivo:** todo el CSS y JS va inline en `index.html`.
+- **Un solo archivo de presentación:** todo el CSS y JS va inline en
+  `index.html`; las gráficas se leen de `analysis/` y el video requiere red.
 
 ## Guion de quién dice qué
 

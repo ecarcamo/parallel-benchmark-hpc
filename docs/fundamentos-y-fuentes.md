@@ -31,12 +31,25 @@ el cuello de botella casi nunca es el cómputo, sino la **memoria** y la
 
 **Las dos brechas que vamos a explicar:**
 
-1. **HPCG / HPL = 17.41 / 1809 = 0.96 %.** La máquina #1 del mundo rinde
-   menos del **1 %** de su número estrella cuando la carga es realista. Este
-   es el corazón de la presentación.
+1. **HPCG / HPL = 17.41 / 1809 = 0.96 %.** El sistema que era #1 del mundo (en
+   noviembre de 2025) rinde menos del **1 %** de su número estrella cuando la
+   carga es realista — es **~104× más lento** consigo mismo (1809 / 17.41).
+   Este es el corazón de la presentación.
 2. **Rmax / Rpeak = 1809 / 2821 = 64 %.** Incluso HPL, la carga más amable,
-   deja ~36 % del hardware sobre la mesa. El pico teórico es una ficción de
-   folleto.
+   deja ~36 % del hardware sobre la mesa. **HPL es rendimiento medido (Rmax),
+   no el pico teórico**; el pico teórico (Rpeak) es el que nunca se alcanza.
+
+> **Precisión de las cifras (evitar que un profesor nos corrija):**
+> el **104×** es de El Capitan (1809 / 17.41). El **~19×** que a veces
+> mencionamos es de **nuestra Mac** (121.9 / 6.5), no de El Capitan — no
+> mezclar los dos. Y la secuencia correcta es **Rpeak 2821 → HPL/Rmax 1809 →
+> HPCG 17.41**: solo Rpeak es "pico teórico".
+
+> **Actualización TOP500 (junio de 2026):** en la lista de junio de 2026,
+> **LineShine** (China, NSCS Shenzhen, 2.198 EFlop/s en HPL) debutó como #1 y
+> **desplazó a El Capitan al #2**. Nuestro análisis usa la lista de
+> **noviembre de 2025**, donde El Capitan era #1; por eso siempre lo decimos
+> con fecha: *"#1 en noviembre de 2025"*, nunca "#1 hoy".
 
 **Dato de contexto (misma lista):** JUPITER Booster (Alemania) se volvió el
 primer sistema exaescala de Europa con 1.000 EFlop/s en HPL, pero **aún no
@@ -162,12 +175,29 @@ superpusimos en el Roofline.
 
 | Predicción de la teoría | Lo que medimos nosotros |
 | --- | --- |
-| HPCG es memory-bound porque exige > 4 Byte/FLOP (AI < 0.25) | Nuestro **stencil** mide AI ≈ 0.33 flop/byte y cae sobre la recta de ancho de banda, junto a HPCG |
+| HPCG es memory-bound porque exige > 4 Byte/FLOP (AI < 0.25) | Nuestro **stencil** mide AI ≈ 0.33 flop/byte y queda en la zona memory-bound, junto a HPCG |
 | Una carga compute-bound escala con los cores; una memory-bound se satura | **N-body** escala 5.6× de 1→8 hilos (casi ideal); **stencil** se estanca en 3.6× tras 4 hilos al saturar el ancho de banda |
 | El pico teórico no se alcanza en cargas reales | El Capitan sostiene 64 % en HPL y 0.96 % en HPCG; nuestro contraste HPL-vs-HPCG reproduce la misma forma a escala |
 
 Esta es la parte de **creatividad** de la rúbrica: cerramos el círculo entre
 el paper de 1995, la lista mundial de 2025 y nuestras propias corridas.
+
+### Nota de metodología del Roofline (importante para el Q&A)
+
+El **techo de ancho de banda** del Roofline es el **pico teórico publicado del
+M4 Pro: 273 GB/s** ([Apple, oct. 2024](https://www.apple.com/newsroom/2024/10/apple-introduces-m4-pro-and-m4-max/)),
+una fuente **independiente** de nuestras mediciones. Deliberadamente **no**
+derivamos el techo del propio stencil (sería circular: el punto caería sobre la
+recta por construcción). Con el techo en 273 GB/s, el stencil sostiene **~58 %
+del pico** — un resultado realista para un kernel de streaming.
+
+La corrida de **STREAM** que teníamos (32.6 GB/s, `machine=desconocido`) **no es
+representativa** del M4 Pro (memoria unificada de alto ancho de banda); por eso
+no se usa como techo. *Mejora pendiente para máximo rigor:* volver a correr
+STREAM en la Mac (`./scripts/build_stream.sh && ./scripts/run_sweep.sh stream
+'./benchmarks/stream_<N>'`) y usar ese valor medido para **confirmar**
+empíricamente el techo. El **techo de cómputo** (128 GFLOP/s) sí es medido
+(máximo entre HPL y nuestra N-body).
 
 ---
 
@@ -200,8 +230,9 @@ el paper de 1995, la lista mundial de 2025 y nuestras propias corridas.
 
 ## 7. Frases-bala listas para decir en vivo (cada una con su respaldo)
 
-- *"La computadora más rápida del mundo rinde menos del 1 % de su número
-  estrella en una carga realista."* → §1, TOP500 nov 2025.
+- *"La que era la computadora más rápida del mundo —El Capitan, #1 en noviembre
+  de 2025— rinde menos del 1 % de su número estrella en una carga realista;
+  104× más lenta consigo misma."* → §1, TOP500 nov 2025.
 - *"El cuello de botella lo predijo un paper de 1995 y sigue vigente en
   2025."* → §3.1, Wulf & McKee.
 - *"El pico teórico es marketing: ni HPL, la carga más fácil, pasa del 64 %."*

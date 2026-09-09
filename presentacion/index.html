@@ -3,467 +3,589 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>El pico es una mentira · Benchmark y Rendimiento de Aplicaciones Paralelas</title>
+<meta name="theme-color" content="#05060a">
+<title>El pico es una mentira · Benchmark y rendimiento paralelo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#05060a; --bg2:#0a0d16; --panel:#0e121e; --ink:#eef2ff; --muted:#8a93ad;
-  --line:#1b2233; --compute:#ff5d73; --memory:#39a0d6; --amber:#e8b04b;
-  --grad: linear-gradient(120deg,#ff5d73,#e8b04b);
-  --font: "Inter", system-ui, sans-serif;
-  --display: "Space Grotesk", system-ui, sans-serif;
+  --bg:#05060a; --bg-soft:#090c14; --panel:rgba(14,18,30,.72); --ink:#f4f6ff;
+  --muted:#8e98b3; --line:rgba(150,170,220,.16); --compute:#ff5d73;
+  --memory:#39a0d6; --amber:#f1b94c; --green:#58d6a9;
+  --grad:linear-gradient(120deg,var(--compute),var(--amber));
+  --font:"Inter",system-ui,sans-serif; --display:"Space Grotesk",system-ui,sans-serif;
+  --ease:cubic-bezier(.2,.75,.2,1);
 }
-*{box-sizing:border-box; margin:0; padding:0}
-html{scroll-behavior:smooth}
-body{background:var(--bg); color:var(--ink); font-family:var(--font);
-  -webkit-font-smoothing:antialiased; overflow-x:hidden; line-height:1.6}
-a{color:inherit}
-h1,h2,h3{font-family:var(--display); font-weight:700; line-height:1.05; letter-spacing:-0.02em}
-/* legibilidad del texto sobre el fondo de particulas */
-section h2, .lead, .eyebrow, .figcap, .quote{text-shadow:0 2px 24px rgba(5,6,10,.75)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-snap-type:y mandatory;background:var(--bg)}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.55;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+button,a{font:inherit;color:inherit}
+button{border:0}
+h1,h2,h3{font-family:var(--display);line-height:.98;letter-spacing:-.035em}
+b,strong{font-weight:600}
+::selection{background:rgba(255,93,115,.35);color:#fff}
 
-/* progress bar */
-#progress{position:fixed; top:0; left:0; height:3px; width:0%;
-  background:var(--grad); z-index:100; transition:width .1s linear}
+/* Ambiente: particulas, grano y luces por escena */
+#bg-canvas{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;pointer-events:none}
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.18;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.11'/%3E%3C/svg%3E")}
+.aurora{position:absolute;width:560px;height:560px;border-radius:50%;filter:blur(110px);
+  opacity:.11;pointer-events:none;transform:translateZ(0)}
+.aurora.red{background:var(--compute);right:-240px;top:-190px}
+.aurora.blue{background:var(--memory);left:-260px;bottom:-230px}
 
-/* nav */
-nav{position:fixed; top:0; width:100%; z-index:90; display:flex; justify-content:space-between;
-  align-items:center; padding:18px 32px; backdrop-filter:blur(10px);
-  background:linear-gradient(180deg,rgba(5,6,10,.75),rgba(5,6,10,0)); font-size:13px}
-nav .brand{font-family:var(--display); font-weight:600; letter-spacing:.02em}
-nav .brand b{background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
-nav .links{display:flex; gap:22px; color:var(--muted)}
-nav .links a{text-decoration:none; transition:color .2s}
-nav .links a:hover{color:var(--ink)}
-@media(max-width:720px){nav .links{display:none}}
+/* Chrome de presentacion */
+#progress{position:fixed;top:0;left:0;height:3px;width:12.5%;background:var(--grad);
+  box-shadow:0 0 20px rgba(255,93,115,.55);z-index:120;transition:width .55s var(--ease)}
+#topbar{position:fixed;top:0;left:0;right:0;z-index:110;height:72px;padding:0 34px;
+  display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(5,6,10,.88),transparent)}
+.brand{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.05em}
+.brand em{font-style:normal;background:var(--grad);background-clip:text;-webkit-background-clip:text;color:transparent}
+#chapter{font-size:11px;text-transform:uppercase;letter-spacing:.22em;color:var(--muted)}
+.present-btn{display:flex;align-items:center;gap:9px;background:rgba(12,16,27,.76);border:1px solid var(--line);
+  border-radius:999px;padding:9px 14px;cursor:pointer;transition:.25s var(--ease);font-size:12px;color:#cbd2e7}
+.present-btn:hover{border-color:rgba(255,255,255,.35);transform:translateY(-1px);color:#fff}
+.present-btn svg{width:14px;height:14px}
 
-/* layout */
-section{position:relative; padding:120px 24px; max-width:1120px; margin:0 auto}
-.center{text-align:center}
-.eyebrow{font-family:var(--display); font-size:13px; letter-spacing:.28em; text-transform:uppercase;
-  color:var(--amber); margin-bottom:20px}
-.lead{color:var(--muted); font-size:clamp(16px,2.2vw,20px); max-width:680px; margin:22px auto 0}
+#rail{position:fixed;z-index:105;right:25px;top:50%;transform:translateY(-50%);display:grid;gap:13px}
+.dot{width:9px;height:9px;border-radius:50%;background:#394056;border:1px solid transparent;cursor:pointer;
+  transition:.3s var(--ease);position:relative}
+.dot::before{content:attr(aria-label);position:absolute;right:18px;top:50%;transform:translateY(-50%) translateX(6px);
+  white-space:nowrap;font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:#c6cee2;opacity:0;
+  pointer-events:none;transition:.2s}
+.dot:hover::before{opacity:1;transform:translateY(-50%) translateX(0)}
+.dot.active{background:var(--amber);box-shadow:0 0 0 5px rgba(241,185,76,.1),0 0 18px rgba(241,185,76,.5)}
+#controls{position:fixed;z-index:108;left:50%;bottom:20px;transform:translateX(-50%);display:flex;align-items:center;
+  gap:8px;padding:6px;background:rgba(9,12,20,.78);border:1px solid var(--line);border-radius:999px;
+  backdrop-filter:blur(18px);box-shadow:0 12px 42px rgba(0,0,0,.35);transition:opacity .3s}
+.control{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:transparent;
+  color:#aab3cb;cursor:pointer;font-size:16px;transition:.2s}
+.control:hover:not(:disabled){background:#171c2b;color:#fff}
+.control:disabled{opacity:.25;cursor:not-allowed}
+#counter{min-width:62px;text-align:center;font-family:var(--display);font-size:11px;letter-spacing:.16em;color:#d4daeb}
 
-/* hero */
-/* fondo de particulas interactivo, fijo detras de TODA la pagina */
-#bg-canvas{position:fixed; inset:0; width:100vw; height:100vh; z-index:0; pointer-events:none}
-nav, header, section, footer{position:relative; z-index:1}
-#hero{height:100vh; min-height:640px; display:flex; flex-direction:column; justify-content:center;
-  align-items:center; text-align:center; padding:24px; max-width:none; margin:0; overflow:hidden; z-index:1}
-#hero .veil{position:absolute; inset:0; z-index:0;
-  background:radial-gradient(ellipse at 50% 40%,rgba(5,6,10,.05),rgba(5,6,10,.55) 78%)}
-#hero .content{position:relative; z-index:2; max-width:920px}
-#hero h1{font-size:clamp(44px,8vw,104px); text-shadow:0 4px 60px rgba(0,0,0,.6)}
-#hero h1 .g{background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
-#hero .sub{margin-top:26px; font-size:clamp(16px,2.4vw,22px); color:#c7cee0; max-width:640px;
-  margin-left:auto; margin-right:auto}
-.scrollcue{position:absolute; bottom:34px; left:50%; transform:translateX(-50%); z-index:2;
-  color:var(--muted); font-size:12px; letter-spacing:.2em; text-transform:uppercase; animation:bob 2s infinite}
-@keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,8px)}}
-.tag{display:inline-block; margin-top:30px; font-size:12.5px; color:var(--muted);
-  border:1px solid var(--line); border-radius:100px; padding:8px 16px; backdrop-filter:blur(4px)}
+/* Escenas */
+.scene{position:relative;z-index:1;min-height:100svh;width:100%;padding:92px clamp(28px,6vw,96px) 72px;
+  display:grid;place-items:center;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden}
+.scene-inner{width:min(1180px,100%);position:relative;z-index:2}
+.scene-no{font-family:var(--display);font-size:12px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--amber);margin-bottom:20px;display:flex;align-items:center;gap:12px}
+.scene-no::before{content:"";display:block;width:32px;height:1px;background:currentColor}
+.display{font-size:clamp(48px,7vw,102px)}
+.headline{font-size:clamp(36px,5.3vw,72px)}
+.subhead{font-size:clamp(29px,4vw,52px)}
+.lead{font-size:clamp(16px,1.65vw,21px);color:#aab3ca;max-width:720px;margin-top:24px}
+.lead strong{color:#fff}
+.gradient{background:var(--grad);background-clip:text;-webkit-background-clip:text;color:transparent}
+.memory{color:var(--memory)}.compute{color:var(--compute)}.amber{color:var(--amber)}
+.micro{font-size:12px;color:#6f7892;letter-spacing:.02em}
 
-/* reveal — el estado oculto solo aplica si hay JS (clase .js en <html>),
-   asi la pagina NUNCA queda en blanco si el JS falla o va deshabilitado. */
-.js .reveal{opacity:0; transform:translateY(34px); transition:opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1)}
-.js .reveal.visible{opacity:1; transform:none}
-.reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}
-.reveal.d3{transition-delay:.24s}.reveal.d4{transition-delay:.32s}
-@media (prefers-reduced-motion: reduce){
-  .js .reveal{opacity:1 !important; transform:none !important; transition:none !important}
+/* Revelado escenico */
+.js .reveal{opacity:0;transform:translateY(34px);filter:blur(6px);transition:opacity .8s var(--ease),transform .8s var(--ease),filter .8s var(--ease)}
+.js .scene.active .reveal{opacity:1;transform:none;filter:none}
+.js .scene.active .d1{transition-delay:.12s}.js .scene.active .d2{transition-delay:.24s}
+.js .scene.active .d3{transition-delay:.38s}.js .scene.active .d4{transition-delay:.52s}
+
+/* 00 — hero */
+#hero{text-align:center}
+#hero .scene-inner{max-width:1040px}
+.hero-kicker{display:inline-flex;gap:10px;align-items:center;padding:7px 14px;border:1px solid var(--line);
+  border-radius:999px;color:#a7b0c7;font-size:11px;letter-spacing:.13em;text-transform:uppercase;margin-bottom:27px;
+  background:rgba(10,13,22,.5);backdrop-filter:blur(10px)}
+.hero-kicker i{width:6px;height:6px;border-radius:50%;background:var(--amber);box-shadow:0 0 15px var(--amber)}
+#hero h1{font-size:clamp(58px,9.2vw,134px);letter-spacing:-.065em;text-shadow:0 8px 70px rgba(0,0,0,.7)}
+#hero .lead{margin:30px auto 0;font-size:clamp(18px,2vw,25px);max-width:800px;color:#c2c9dc}
+.hero-line{width:min(620px,75%);height:1px;margin:36px auto 0;background:linear-gradient(90deg,transparent,var(--line),transparent)}
+.scroll-cue{position:absolute;bottom:72px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.2em;
+  color:#68718b;text-transform:uppercase;display:grid;justify-items:center;gap:10px}
+.scroll-cue span{display:block;width:1px;height:26px;background:linear-gradient(var(--amber),transparent);animation:cue 1.8s infinite}
+@keyframes cue{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* 01 — caida */
+.impact-grid{display:grid;grid-template-columns:1.18fr .82fr;gap:clamp(38px,6vw,90px);align-items:center}
+.metric-stack{display:grid;gap:14px;margin-top:38px}
+.metric{position:relative;overflow:hidden;min-height:86px;padding:16px 22px;border:1px solid var(--line);
+  background:rgba(11,14,24,.75);border-radius:16px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.metric::before{content:"";position:absolute;inset:0 auto 0 0;width:0;background:var(--bar);opacity:.14;
+  transition:width 1.25s var(--ease)}
+.scene.active .metric::before{width:var(--w)}
+.metric:nth-child(2)::before{transition-delay:.18s}.metric:nth-child(3)::before{transition-delay:.36s}
+.metric-label{position:relative;z-index:1;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#a6afc5}
+.metric-label span{display:block;text-transform:none;letter-spacing:0;color:#69738e;margin-top:3px}
+.metric-value{position:relative;z-index:1;font-family:var(--display);font-size:clamp(27px,3vw,43px);font-weight:700;white-space:nowrap}
+.metric-value small{font-size:.38em;color:#818ba5;letter-spacing:0}
+.shock{aspect-ratio:1/1;border-radius:50%;display:grid;place-items:center;text-align:center;position:relative;
+  background:radial-gradient(circle,rgba(255,93,115,.14),rgba(255,93,115,.03) 45%,transparent 67%)}
+.shock::before,.shock::after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(255,93,115,.22)}
+.shock::before{inset:8%;animation:orbit 12s linear infinite}.shock::after{inset:20%;border-style:dashed;animation:orbit 18s linear infinite reverse}
+@keyframes orbit{to{transform:rotate(360deg)}}
+.shock strong{display:block;font-family:var(--display);font-size:clamp(74px,10vw,146px);line-height:.82;
+  letter-spacing:-.08em;color:var(--compute);text-shadow:0 0 45px rgba(255,93,115,.3)}
+.shock strong span{display:block;margin:0;font:inherit;color:inherit}
+.shock>div>span{display:block;margin-top:19px;font-family:var(--display);font-size:clamp(19px,2.1vw,29px);font-weight:600}
+.shock>div>small{display:block;color:#818aa3;font-size:11px;margin-top:8px;letter-spacing:.12em;text-transform:uppercase}
+
+/* Graficas */
+.split{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:clamp(38px,5vw,76px);align-items:center}
+.split.reverse{grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr)}
+.chart-shell{position:relative;border:1px solid rgba(155,175,225,.2);border-radius:24px;padding:11px;
+  background:#05070c;box-shadow:0 35px 90px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.04);overflow:hidden}
+.chart-shell::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(120deg,rgba(255,255,255,.05),transparent 22%)}
+.chart-shell img{display:block;width:100%;border-radius:15px;filter:invert(1) hue-rotate(180deg) saturate(1.15) brightness(.92);opacity:.94}
+.chart-cap{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-top:13px;color:#717b95;font-size:11px}
+.chart-cap .result{color:#c7cfe1;font-family:var(--display);font-weight:600}
+.ratio{display:flex;align-items:flex-end;gap:15px;margin-top:34px}
+.ratio .from,.ratio .to{font-family:var(--display);font-size:clamp(38px,4vw,58px);font-weight:700;line-height:1}
+.ratio .arrow{font-size:28px;color:#626c86;padding-bottom:8px}
+.ratio small{display:block;color:#77819a;font-family:var(--font);font-size:11px;font-weight:400;margin-top:8px;letter-spacing:.08em;text-transform:uppercase}
+.fact-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.fact{border:1px solid var(--line);background:rgba(12,16,27,.62);border-radius:999px;padding:9px 14px;
+  font-size:12px;color:#adb6cc}
+.fact i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:8px;background:var(--c)}
+
+/* Roofline */
+#roofline .scene-inner{width:min(1260px,100%)}
+.roof-head{display:flex;justify-content:space-between;gap:40px;align-items:end;margin-bottom:30px}
+.roof-head .lead{max-width:520px;text-align:right;margin-bottom:2px}
+#roofline .chart-shell{max-width:1180px;margin-inline:auto}
+.legend{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}
+.legend span{border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#9aa4bd}
+.legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px}
+
+/* Escalamiento */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:34px}
+.stat{border:1px solid var(--line);border-radius:18px;padding:20px;background:rgba(12,16,27,.64)}
+.stat strong{font-family:var(--display);font-size:clamp(38px,4.4vw,62px);line-height:1;display:block}
+.stat strong span{font:inherit;color:inherit;display:block}
+.stat>span{font-size:11px;color:#7d87a0;display:block;margin-top:8px;text-transform:uppercase;letter-spacing:.08em}
+
+/* Universo */
+#universe .scene-inner{width:min(1240px,100%)}
+.universe-grid{display:grid;grid-template-columns:.72fr 1.28fr;gap:clamp(34px,5vw,72px);align-items:center}
+.video-shell{position:relative;aspect-ratio:16/9;border:1px solid rgba(255,255,255,.17);border-radius:26px;overflow:hidden;
+  background:#000;box-shadow:0 35px 100px rgba(0,0,0,.65),0 0 80px rgba(57,160,214,.09)}
+.video-shell iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.video-tag{position:absolute;z-index:2;left:16px;top:16px;background:rgba(5,6,10,.72);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.13);border-radius:999px;padding:7px 11px;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.video-poster{position:absolute;inset:0;z-index:1;display:grid;place-items:center;text-align:center;cursor:pointer;
+  background:radial-gradient(circle at 68% 45%,rgba(158,92,255,.28),transparent 18%),radial-gradient(circle at 42% 53%,rgba(57,160,214,.18),transparent 28%),#070811;
+  transition:opacity .45s var(--ease)}
+.video-poster::before{content:"";position:absolute;inset:0;opacity:.7;background-image:radial-gradient(circle,rgba(255,255,255,.9) 0 1px,transparent 1.5px),radial-gradient(circle,rgba(57,160,214,.9) 0 1px,transparent 1.5px);background-size:43px 43px,71px 71px;background-position:3px 8px,19px 31px;mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent)}
+.video-poster.hide{opacity:0;pointer-events:none}
+.play-orbit{position:relative;width:132px;height:132px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(255,255,255,.17);box-shadow:0 0 70px rgba(158,92,255,.2)}
+.play-orbit::before{content:"";position:absolute;inset:13px;border-radius:50%;border:1px dashed rgba(255,255,255,.2);animation:orbit 14s linear infinite}
+.play{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#090a10;font-size:19px;padding-left:3px;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.video-poster strong{position:relative;display:block;font-family:var(--display);font-size:18px;margin-top:20px}
+.video-poster small{position:relative;display:block;color:#7f89a2;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-top:6px}
+.bridge{margin-top:30px;padding-left:18px;border-left:2px solid var(--amber);color:#aeb7cc;font-size:14px}
+
+/* Acciones */
+.action-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:38px}
+.action{position:relative;border:1px solid var(--line);border-radius:20px;padding:24px;background:var(--panel);overflow:hidden;min-height:190px}
+.action::after{content:attr(data-n);position:absolute;right:15px;bottom:-22px;font-family:var(--display);font-weight:700;
+  font-size:88px;color:rgba(255,255,255,.025)}
+.action .icon{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:color-mix(in srgb,var(--c) 15%,transparent);
+  color:var(--c);font-family:var(--display);font-weight:700;margin-bottom:25px}
+.action h3{font-size:20px;letter-spacing:-.02em;line-height:1.12}
+.action p{color:#8791aa;font-size:13px;margin-top:10px}
+.action strong{color:var(--c)}
+.action.wide{grid-column:span 2;min-height:130px;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
+.action.wide .icon{margin:0}
+.action.compact{min-height:130px}
+.action.compact .icon{margin-bottom:15px}
+
+/* Cierre */
+#closing{text-align:center}
+#closing .scene-inner{max-width:1060px}
+.closing-rule{display:flex;align-items:center;gap:18px;justify-content:center;margin-bottom:35px;color:#737d96;
+  font-size:10px;text-transform:uppercase;letter-spacing:.2em}
+.closing-rule::before,.closing-rule::after{content:"";width:80px;height:1px;background:var(--line)}
+#closing h2{font-size:clamp(46px,7vw,98px)}
+.final-line{font-family:var(--display);font-size:clamp(21px,2.5vw,34px);color:#aab3c8;margin-top:32px}
+.teamline{margin-top:42px;color:#69738d;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.appendix-open{margin-top:28px;border:1px solid var(--line);border-radius:999px;padding:10px 16px;background:rgba(10,13,22,.5);
+  color:#aeb7cd;font-size:11px;cursor:pointer;transition:.2s}
+.appendix-open:hover{border-color:#49536e;color:#fff}
+
+/* Apéndice: fuera del recorrido principal */
+#appendix{position:relative;z-index:2;background:#070910;border-top:1px solid var(--line);scroll-margin-top:72px}
+#appendix[hidden]{display:none}
+.appendix-inner{width:min(1100px,calc(100% - 48px));margin:auto;padding:100px 0 60px}
+.appendix-head{display:flex;justify-content:space-between;align-items:flex-start;gap:30px;margin-bottom:48px}
+.appendix-head h2{font-size:clamp(35px,5vw,58px)}
+.back-to-end{border:1px solid var(--line);border-radius:999px;background:#0d111c;padding:9px 14px;color:#aab3c8;font-size:11px;cursor:pointer}
+.appendix-block{padding:54px 0;border-top:1px solid var(--line)}
+.appendix-block h3{font-size:clamp(25px,3vw,38px);margin-bottom:26px}
+.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.card{border:1px solid var(--line);border-radius:17px;padding:20px;background:#0c101a}
+.card .role{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.card h4{font-family:var(--display);font-size:18px;margin-bottom:8px}
+.card p{font-size:12px;color:#818ba4}.card .owner{margin-top:14px;color:#59637c;font-size:10px}
+.appendix-figure{max-width:850px}
+.timeline{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:17px;overflow:hidden}
+.tl{background:#0b0e17;padding:20px}.tl .year{font-family:var(--display);font-size:23px;color:var(--amber);font-weight:700}
+.tl h4{font-family:var(--display);font-size:15px;margin:12px 0 7px}.tl p{font-size:11px;color:#7f89a2}.tl cite{font-size:9px;color:#525c74;font-style:normal;display:block;margin-top:9px}
+.source-line{font-size:11px;color:#626c85;line-height:2}.source-line a{color:#93a8cc;text-decoration:none}.source-line a:hover{text-decoration:underline}
+footer{border-top:1px solid var(--line);padding:36px 0;color:#5e6880;font-size:11px;display:flex;justify-content:space-between;gap:20px}
+
+@media(max-width:950px){
+  .impact-grid,.split,.split.reverse,.universe-grid{grid-template-columns:1fr}
+  .shock{width:min(370px,70vw);margin:auto}.roof-head{display:block}.roof-head .lead{text-align:left}
+  .action-grid{grid-template-columns:1fr 1fr}.action.wide{grid-column:span 2}
+  .timeline{grid-template-columns:1fr}.card-grid{grid-template-columns:1fr 1fr}
 }
-
-/* big number blocks */
-.bignum{font-family:var(--display); font-weight:700; line-height:1;
-  font-size:clamp(60px,14vw,180px); letter-spacing:-0.03em}
-.bignum.c{background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
-.bignum.m{color:var(--memory)}
-.numrow{display:flex; flex-wrap:wrap; gap:20px; justify-content:center; margin-top:50px}
-.stat{flex:1 1 240px; background:var(--panel); border:1px solid var(--line); border-radius:20px;
-  padding:34px 28px; text-align:center}
-.stat .v{font-family:var(--display); font-weight:700; font-size:clamp(34px,5vw,52px); letter-spacing:-.02em}
-.stat .l{color:var(--muted); font-size:14px; margin-top:10px}
-.stat.compute .v{color:var(--compute)} .stat.memory .v{color:var(--memory)} .stat.amber .v{color:var(--amber)}
-
-/* section heads */
-.h-xl{font-size:clamp(34px,6vw,68px)}
-.h-lg{font-size:clamp(28px,5vw,48px)}
-.mb-l{margin-bottom:16px}
-
-/* cards grid */
-.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:18px; margin-top:48px}
-.card{background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:26px;
-  transition:transform .3s, border-color .3s}
-.card:hover{transform:translateY(-4px); border-color:#2c3650}
-.card .k{font-family:var(--display); font-weight:600; font-size:20px; margin-bottom:6px}
-.card .role{font-size:12px; letter-spacing:.12em; text-transform:uppercase; margin-bottom:14px}
-.card .role.compute{color:var(--compute)} .card .role.memory{color:var(--memory)} .card .role.mix{color:var(--amber)}
-.card p{color:var(--muted); font-size:14.5px}
-.card .who{margin-top:16px; font-size:12.5px; color:#6f7896}
-
-/* chart figure */
-.figure{margin-top:52px; background:#fff; border-radius:20px; padding:14px; box-shadow:0 30px 80px rgba(0,0,0,.5);
-  max-width:840px; margin-left:auto; margin-right:auto}
-.figure img{display:block; width:100%; border-radius:10px}
-.figcap{color:var(--muted); font-size:13.5px; text-align:center; margin-top:18px; max-width:720px; margin-left:auto; margin-right:auto}
-.split{display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; margin-top:40px}
-@media(max-width:860px){.split{grid-template-columns:1fr}}
-
-/* video */
-.videowrap{position:relative; margin-top:48px; border-radius:20px; overflow:hidden;
-  box-shadow:0 30px 90px rgba(0,0,0,.6); border:1px solid var(--line); aspect-ratio:16/9; background:#000}
-.videowrap iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
-
-/* timeline */
-.timeline{margin-top:56px; position:relative; padding-left:0}
-.tl{display:grid; grid-template-columns:120px 1fr; gap:26px; padding:26px 0; border-top:1px solid var(--line)}
-.tl .year{font-family:var(--display); font-weight:700; font-size:30px; color:var(--amber)}
-.tl h3{font-size:20px; margin-bottom:6px}
-.tl p{color:var(--muted); font-size:14.5px}
-.tl cite{display:block; margin-top:8px; font-size:12.5px; color:#616a85; font-style:normal}
-@media(max-width:620px){.tl{grid-template-columns:70px 1fr; gap:16px}.tl .year{font-size:20px}}
-
-/* bottleneck list */
-.bn{display:grid; grid-template-columns:44px 1fr; gap:20px; padding:24px 0; border-top:1px solid var(--line)}
-.bn .n{font-family:var(--display); font-weight:700; font-size:22px; color:var(--compute)}
-.bn h3{font-size:19px; margin-bottom:6px}
-.bn p{color:var(--muted); font-size:14.5px}
-.bn .fix{color:var(--memory); font-weight:500}
-
-/* quote */
-.quote{margin-top:20px; font-family:var(--display); font-weight:500; font-size:clamp(22px,3.4vw,34px);
-  line-height:1.3; letter-spacing:-.01em}
-.quote .g{background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
-
-/* footer */
-footer{border-top:1px solid var(--line); padding:60px 24px; text-align:center; color:var(--muted); font-size:13.5px}
-footer .team{display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin:22px 0}
-footer .team span{border:1px solid var(--line); border-radius:100px; padding:7px 16px; color:var(--ink)}
-.srclist{margin-top:14px; font-size:12.5px; color:#616a85; line-height:1.9; max-width:760px; margin-left:auto; margin-right:auto}
-.srclist a{color:#8fa6c9; text-decoration:none} .srclist a:hover{text-decoration:underline}
-.pill{display:inline-block; font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
-  color:var(--amber); border:1px solid var(--line); border-radius:100px; padding:5px 12px; margin-bottom:22px}
+@media(max-width:680px){
+  html{scroll-snap-type:y proximity}.scene{padding:86px 22px 75px;min-height:100svh;overflow:visible}
+  #topbar{padding:0 18px}.present-btn span,#chapter,#rail{display:none}#controls{bottom:12px}
+  .display{font-size:clamp(47px,16vw,72px)}.headline{font-size:clamp(38px,12vw,55px)}
+  .metric{min-height:73px;padding:13px 16px}.metric-value{font-size:26px}.metric-label span{display:none}
+  .split.reverse{display:flex;flex-direction:column-reverse}.chart-cap{display:block}.chart-cap span{display:block;margin-top:5px}
+  .stat-grid,.action-grid,.card-grid{grid-template-columns:1fr}.action.wide{grid-column:auto;display:block}.action.wide .icon{margin-bottom:15px}
+  .appendix-inner{width:min(100% - 32px,1100px)}.appendix-head{display:block}.back-to-end{margin-top:20px}
+  footer{display:block}footer span{display:block;margin-top:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}.reveal{opacity:1!important;transform:none!important;filter:none!important;transition:none!important}
+  .metric::before{transition:none!important;width:var(--w)!important}.shock::before,.shock::after,.scroll-cue span{animation:none!important}
+}
+@media print{
+  @page{size:16in 10in;margin:0}
+  #bg-canvas,#topbar,#rail,#controls,#progress,.aurora,.scroll-cue{display:none!important}
+  html{scroll-snap-type:none}.scene{height:10in;min-height:10in;page-break-after:always;background:#05060a}
+  #appendix{display:block!important}.reveal{opacity:1!important;transform:none!important;filter:none!important}
+}
 </style>
 </head>
 <body>
 <script>document.documentElement.classList.add('js');</script>
-<canvas id="bg-canvas"></canvas>
-<div id="progress"></div>
-<nav>
-  <div class="brand"><b>ROOFLINE</b> · Caso 4</div>
-  <div class="links">
-    <a href="#gap">La brecha</a>
-    <a href="#roofline">Roofline</a>
-    <a href="#apps">Nuestras apps</a>
-    <a href="#ciencia">Ciencia</a>
-    <a href="#cuellos">Cuellos</a>
-  </div>
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+<div id="progress" aria-hidden="true"></div>
+
+<nav id="topbar" aria-label="Controles de la presentación">
+  <div class="brand"><em>ROOFLINE</em> · CASO 4</div>
+  <div id="chapter">Tesis</div>
+  <button class="present-btn" id="fullscreen" type="button" title="Pantalla completa (F)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+    <span>Presentar</span>
+  </button>
 </nav>
+<div id="rail" aria-label="Escenas"></div>
+<div id="controls">
+  <button class="control" id="prev" type="button" aria-label="Escena anterior">←</button>
+  <div id="counter" aria-live="polite">01 / 08</div>
+  <button class="control" id="next" type="button" aria-label="Escena siguiente">→</button>
+</div>
 
-<!-- ============ HERO ============ -->
-<header id="hero">
-  <div class="veil"></div>
-  <div class="content">
-    <div class="pill">Computación Paralela y Distribuida · UVG</div>
-    <h1>El pico es una <span class="g">mentira</span>.</h1>
-    <p class="sub">La computadora más rápida del planeta rinde menos del <b>1%</b> de su
-      número estrella cuando el trabajo se parece al del mundo real. Esta es la
-      historia de por qué —y cómo lo medimos nosotros.</p>
-    <div class="tag">Benchmark y Rendimiento de Aplicaciones Paralelas</div>
-  </div>
-  <div class="scrollcue">desliza ↓</div>
-</header>
+<main>
+  <!-- 00 · TESIS -->
+  <section class="scene" id="hero" data-title="Tesis">
+    <div class="aurora red"></div><div class="aurora blue"></div>
+    <div class="scene-inner">
+      <div class="hero-kicker reveal"><i></i> Computación paralela · UVG</div>
+      <h1 class="reveal d1">El pico es una<br><span class="gradient">mentira.</span></h1>
+      <p class="lead reveal d2">Una máquina puede verse imparable en el folleto y quedarse esperando en el mundo real. <strong>La máquina no cambió. Cambió el trabajo.</strong></p>
+      <div class="hero-line reveal d3"></div>
+      <p class="micro reveal d4" style="margin-top:18px">Benchmark y rendimiento de aplicaciones paralelas</p>
+    </div>
+    <div class="scroll-cue">Comenzar<span></span></div>
+  </section>
 
-<!-- ============ HOOK / THESIS ============ -->
-<section id="hook" class="center">
-  <div class="eyebrow reveal">TOP500 · Noviembre 2025</div>
-  <h2 class="h-xl reveal d1">Conoce a <span style="color:var(--amber)">El Capitan</span>.</h2>
-  <p class="lead reveal d2">El supercomputador #1 del mundo. 11.3 millones de núcleos,
-    29.7 megavatios de potencia. En el benchmark que sale en las noticias, es una bestia.</p>
-
-  <div class="numrow">
-    <div class="stat compute reveal d1"><div class="v"><span data-count="1809" data-suffix=""></span></div><div class="l">PFlop/s en HPL (LINPACK)<br>el número de las noticias</div></div>
-    <div class="stat memory reveal d2"><div class="v"><span data-count="17.41" data-dec="2"></span></div><div class="l">PFlop/s en HPCG<br>una carga realista</div></div>
-    <div class="stat amber reveal d3"><div class="v"><span data-count="0.96" data-dec="2" data-suffix="%"></span></div><div class="l">de su propio pico<br>en trabajo real</div></div>
-  </div>
-  <p class="lead reveal d4" style="margin-top:44px">La misma máquina. <b>19 veces más lenta</b> consigo misma.
-    Y el culpable no es el cómputo: es la <span style="color:var(--memory)">memoria</span>.</p>
-</section>
-
-<!-- ============ THE CAST ============ -->
-<section id="cast">
-  <div class="eyebrow reveal">Los instrumentos</div>
-  <h2 class="h-lg reveal d1">Cinco benchmarks para atrapar un cuello de botella</h2>
-  <p class="lead reveal d2" style="margin-left:0">Cada uno estresa una parte distinta de la máquina.
-    Juntos, revelan dónde se pierde el rendimiento.</p>
-  <div class="grid">
-    <div class="card reveal d1"><div class="role compute">Compute-bound</div><div class="k">HPL / LINPACK</div>
-      <p>Álgebra lineal densa (factorización LU). Mide el pico de punto flotante. Es el número del TOP500.</p><div class="who">Responsable · Diego</div></div>
-    <div class="card reveal d2"><div class="role memory">Memory-bound</div><div class="k">HPCG</div>
-      <p>Gradiente conjugado con matriz dispersa. Accesos irregulares a memoria. La contracara de HPL.</p><div class="who">Responsable · Roberto</div></div>
-    <div class="card reveal d3"><div class="role memory">Ancho de banda</div><div class="k">STREAM</div>
-      <p>Mide el ancho de banda de memoria sostenible. Es el techo que explica por qué HPCG se cae.</p><div class="who">Responsable · Roberto</div></div>
-    <div class="card reveal d1"><div class="role mix">Comunicación</div><div class="k">NPB (proxy de SPEC)</div>
-      <p>Kernels de la NASA en OpenMP vs MPI. Aísla el overhead de memoria compartida vs distribuida.</p><div class="who">Responsable · Nico</div></div>
-    <div class="card reveal d2"><div class="role compute">Nuestras apps</div><div class="k">N-body + Stencil</div>
-      <p>Dos aplicaciones propias diseñadas para caer en extremos opuestos del Roofline. El diferenciador.</p><div class="who">Responsable · Esteban</div></div>
-    <div class="card reveal d3"><div class="role mix">Entorno</div><div class="k">Docker · Mac M4 Pro</div>
-      <p>Todo corre en un contenedor reproducible, en una sola máquina de referencia. Números comparables.</p><div class="who">Responsable · Luis</div></div>
-  </div>
-</section>
-
-<!-- ============ THE GAP ============ -->
-<section id="gap" class="center">
-  <div class="eyebrow reveal">El hallazgo #1</div>
-  <h2 class="h-lg reveal d1">La misma máquina, dos verdades</h2>
-  <p class="lead reveal d2">Lo reprodujimos en nuestra Mac de referencia (Apple M4 Pro).
-    HPL vuela; HPCG se estrella contra el muro de memoria.</p>
-  <div class="figure reveal d2"><img src="../analysis/hpl_vs_hpcg.png" alt="HPL vs HPCG en la Mac M4 Pro"></div>
-  <p class="figcap reveal">Nuestro contraste a escala de laptop: HPL alcanza ~122 GFLOP/s; HPCG apenas ~6.5 GFLOP/s.
-    La <b>misma forma</b> que El Capitan a escala mundial. El fenómeno es universal.</p>
-</section>
-
-<!-- ============ ROOFLINE ============ -->
-<section id="roofline" class="center">
-  <div class="eyebrow reveal">El modelo que lo explica todo</div>
-  <h2 class="h-xl reveal d1">El <span style="color:var(--amber)">Roofline</span></h2>
-  <p class="lead reveal d2">Rendimiento contra <i>intensidad aritmética</i> (FLOP por byte). Dos techos:
-    el ancho de banda (rampa) y el cómputo (meseta). Cada carga choca con uno.</p>
-  <div class="figure reveal d2"><img src="../analysis/roofline.png" alt="Modelo Roofline con todos los benchmarks"></div>
-  <p class="figcap reveal">Una sola imagen une todo: HPL y nuestra N-body (128 GFLOP/s) pegados al techo de cómputo;
-    nuestro Stencil justo sobre la rampa del ancho de banda (159 GB/s medidos); y HPCG aún más abajo,
-    porque su acceso disperso ni siquiera llega a saturar la memoria. A la izquierda mandan los bytes;
-    a la derecha, los FLOPs.</p>
-</section>
-
-<!-- ============ SCALING ============ -->
-<section id="scaling">
-  <div class="split">
-    <div>
-      <div class="eyebrow reveal">El hallazgo #2</div>
-      <h2 class="h-lg reveal d1 mb-l">Más núcleos no siempre es más rápido</h2>
-      <p class="lead reveal d2" style="margin-left:0">La N-body sigue subiendo hacia el ideal (5.6×);
-        el Stencil se <b>estanca tras 4 hilos</b>: al saturar el ancho de banda, cada núcleo nuevo
-        rinde cada vez menos. El cuello de botella no es el cómputo, es la memoria.</p>
-      <div class="numrow" style="margin-top:34px">
-        <div class="stat compute reveal d2"><div class="v"><span data-count="5.6" data-dec="1" data-suffix="×"></span></div><div class="l">N-body (compute)<br>de 1 a 8 hilos</div></div>
-        <div class="stat memory reveal d3"><div class="v"><span data-count="3.6" data-dec="1" data-suffix="×"></span></div><div class="l">Stencil (memory)<br>de 1 a 8 hilos</div></div>
+  <!-- 01 · IMPACTO -->
+  <section class="scene" id="impact" data-title="La caída">
+    <div class="aurora red"></div>
+    <div class="scene-inner impact-grid">
+      <div>
+        <div class="scene-no reveal">01 · La promesa</div>
+        <h2 class="headline reveal d1">Una máquina.<br><span class="gradient">Tres verdades.</span></h2>
+        <p class="lead reveal d2">El Capitan, datos publicados en noviembre de 2025. Del máximo del hardware al trabajo representativo, la caída cambia la historia.</p>
+        <div class="metric-stack reveal d3">
+          <div class="metric" style="--w:100%;--bar:#f1b94c">
+            <div class="metric-label">Rpeak<span>máximo teórico</span></div><div class="metric-value amber"><span data-count="2821" data-dec="0">2821</span> <small>PFlop/s</small></div>
+          </div>
+          <div class="metric" style="--w:64%;--bar:#ff5d73">
+            <div class="metric-label">HPL · Rmax<span>álgebra densa</span></div><div class="metric-value compute"><span data-count="1809" data-dec="0">1809</span> <small>PFlop/s</small></div>
+          </div>
+          <div class="metric" style="--w:1%;--bar:#39a0d6">
+            <div class="metric-label">HPCG<span>carga representativa</span></div><div class="metric-value memory"><span data-count="17.41" data-dec="2">17.41</span> <small>PFlop/s</small></div>
+          </div>
+        </div>
+      </div>
+      <div class="shock reveal d4">
+        <div><strong><span data-count="0.96" data-dec="2" data-suffix="%">0.96%</span></strong><span>del rendimiento HPL</span><small>≈ 104 veces menos</small></div>
       </div>
     </div>
-    <div class="figure reveal d2"><img src="../analysis/scaling_apps.png" alt="Escalamiento nbody vs stencil"></div>
-  </div>
-</section>
+  </section>
 
-<!-- ============ OMP vs MPI ============ -->
-<section id="ompmpi" class="center">
-  <div class="eyebrow reveal">El hallazgo #3</div>
-  <h2 class="h-lg reveal d1">Mismo algoritmo, dos paradigmas</h2>
-  <p class="lead reveal d2">Corrimos el kernel CG de la NASA en OpenMP (memoria compartida) y MPI
-    (memoria distribuida). En un solo nodo, MPI usa transporte de memoria compartida: casi sin penalización.
-    A escala real, esa distancia es donde nace el segundo cuello de botella.</p>
-  <div class="figure reveal d2" style="max-width:820px;margin-left:auto;margin-right:auto"><img src="../analysis/npb_omp_vs_mpi.png" alt="NPB OpenMP vs MPI"></div>
-</section>
+  <!-- 02 · REPLICA -->
+  <section class="scene" id="replica" data-title="Nuestra evidencia">
+    <div class="aurora blue"></div>
+    <div class="scene-inner split reverse">
+      <div class="chart-shell reveal d2">
+        <img src="../analysis/hpl_vs_hpcg.png" alt="Comparación HPL y HPCG medida en la Mac de referencia">
+        <div class="chart-cap"><span>Fuente · results/summary.csv</span><span class="result">Misma máquina · distinta carga</span></div>
+      </div>
+      <div>
+        <div class="scene-no reveal">02 · Lo reproducimos</div>
+        <h2 class="headline reveal d1">La caída también cabe en <span class="memory">una laptop.</span></h2>
+        <p class="lead reveal d2">En nuestra Mac M4 Pro, HPL aprovecha el cómputo denso. HPCG tropieza con accesos dispersos y movimiento de memoria.</p>
+        <div class="ratio reveal d3">
+          <div class="from compute">121.9<small>GFLOP/s · HPL</small></div><div class="arrow">→</div>
+          <div class="to memory">6.5<small>GFLOP/s · HPCG</small></div>
+        </div>
+        <div class="fact-row reveal d4"><span class="fact"><i style="--c:var(--compute)"></i>compute-bound</span><span class="fact"><i style="--c:var(--memory)"></i>memory-bound</span><span class="fact"><i style="--c:var(--amber)"></i>≈ 19×</span></div>
+      </div>
+    </div>
+  </section>
 
-<!-- ============ OUR APPS + VIDEO ============ -->
-<section id="apps" class="center">
-  <div class="eyebrow reveal">Nuestro diferenciador</div>
-  <h2 class="h-xl reveal d1">De la laptop… <span class="g" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">al universo</span></h2>
-  <p class="lead reveal d2">Escribimos una simulación N-body: el mismo cómputo gravitacional de todos-contra-todos
-    que forma galaxias. La corrimos en una laptop. Esto es ese <b>mismo algoritmo</b> a escala planetaria,
-    con 550 mil millones de partículas, en el supercomputador Fugaku — que aparece #2 en la lista HPCG que citamos.</p>
-  <div class="videowrap reveal d2">
-    <iframe src="https://www.youtube.com/embed/kndzioHG8Uc?rel=0" title="ν2GC — Largest supercomputer simulation of the Universe"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
-  </div>
-  <p class="figcap reveal">Simulación ν2GC (Ishiyama et al.). La belleza infinita del cómputo compute-bound…
-    corriendo en una máquina que, en trabajo realista, rinde menos del 1% de su pico. Ese es el punto.</p>
-</section>
+  <!-- 03 · ROOFLINE -->
+  <section class="scene" id="roofline" data-title="El modelo">
+    <div class="scene-inner">
+      <div class="roof-head">
+        <div><div class="scene-no reveal">03 · El mapa</div><h2 class="headline reveal d1">El <span class="gradient">Roofline</span> lo hace visible.</h2></div>
+        <p class="lead reveal d2">A la izquierda mandan los <strong class="memory">bytes</strong>. A la derecha, los <strong class="compute">FLOPs</strong>. Toda carga termina chocando contra un techo.</p>
+      </div>
+      <div class="chart-shell reveal d3">
+        <img src="../analysis/roofline.png" alt="Modelo Roofline con HPL, HPCG, N-body y Stencil">
+      </div>
+      <div class="legend reveal d4"><span><i style="background:var(--memory)"></i>memoria</span><span><i style="background:var(--compute)"></i>cómputo</span><span><i style="background:var(--amber)"></i>punto de quiebre</span></div>
+    </div>
+  </section>
 
-<!-- ============ SCIENCE ============ -->
-<section id="ciencia">
-  <div class="eyebrow reveal">No lo inventamos nosotros</div>
-  <h2 class="h-lg reveal d1">30 años de ciencia, un solo cuello de botella</h2>
-  <p class="lead reveal d2" style="margin-left:0">La brecha que medimos fue predicha en 1995, modelada en 2009
-    y confirmada por la máquina #1 del mundo en 2025.</p>
-  <div class="timeline">
-    <div class="tl reveal"><div class="year">1995</div><div>
-      <h3>El "muro de memoria"</h3>
-      <p>El procesador y la DRAM mejoran a ritmos distintos: la brecha crece exponencialmente.
-        El procesador termina esperando a la memoria.</p>
-      <cite>Wulf & McKee — ACM SIGARCH Computer Architecture News 23(1)</cite></div></div>
-    <div class="tl reveal"><div class="year">1995</div><div>
-      <h3>STREAM y el balance de máquina</h3>
-      <p>McCalpin mide el ancho de banda <i>sostenible</i>, no el de folleto. Hoy es el estándar de la industria.
-        Nos da el techo inclinado del Roofline.</p>
-      <cite>McCalpin — IEEE TCCA Newsletter</cite></div></div>
-    <div class="tl reveal"><div class="year">2009</div><div>
-      <h3>El modelo Roofline</h3>
-      <p>Una gráfica que vuelve visible el cuello de botella. Hoy integrada en Intel Advisor y NVIDIA Nsight Compute.</p>
-      <cite>Williams, Waterman & Patterson — Communications of the ACM 52(4)</cite></div></div>
-    <div class="tl reveal"><div class="year">2016</div><div>
-      <h3>HPCG: un mejor termómetro</h3>
-      <p>Dongarra crea HPCG porque HPL dejó de predecir apps reales. Exige &gt;4 Byte/FLOP: por eso vive contra el muro.</p>
-      <cite>Dongarra, Heroux & Luszczek — Int. J. of HPC Applications 30(1)</cite></div></div>
-    <div class="tl reveal"><div class="year">2025</div><div>
-      <h3>El Capitan lo confirma</h3>
-      <p>1,809 PFlop/s en HPL, 17.41 en HPCG. La predicción de 1995, verificada por el #1 del mundo.</p>
-      <cite>TOP500 — Lista de noviembre 2025</cite></div></div>
-  </div>
-  <div class="center" style="margin-top:60px">
-    <p class="quote reveal">"El pico teórico es marketing.<br><span class="g">El Roofline es la verdad.</span>"</p>
-  </div>
-</section>
+  <!-- 04 · ESCALAMIENTO -->
+  <section class="scene" id="scaling" data-title="El límite">
+    <div class="scene-inner split">
+      <div>
+        <div class="scene-no reveal">04 · Ocho núcleos</div>
+        <h2 class="headline reveal d1">Más núcleos.<br><span class="gradient">Dos destinos.</span></h2>
+        <p class="lead reveal d2">N-body sigue encontrando trabajo. Stencil satura el camino hacia la memoria: después de cuatro hilos, casi todo esfuerzo adicional se pierde.</p>
+        <div class="stat-grid reveal d3">
+          <div class="stat"><strong class="compute"><span data-count="5.6" data-dec="1" data-suffix="×">5.6×</span></strong><span>N-body · 1 → 8 hilos</span></div>
+          <div class="stat"><strong class="memory"><span data-count="3.6" data-dec="1" data-suffix="×">3.6×</span></strong><span>Stencil · 1 → 8 hilos</span></div>
+        </div>
+      </div>
+      <div class="chart-shell reveal d2">
+        <img src="../analysis/scaling_apps.png" alt="Escalamiento de N-body y Stencil con 1, 2, 4 y 8 hilos">
+        <div class="chart-cap"><span>Línea punteada · ideal</span><span class="result">El techo decide la escalabilidad</span></div>
+      </div>
+    </div>
+  </section>
 
-<!-- ============ BOTTLENECKS ============ -->
-<section id="cuellos">
-  <div class="eyebrow reveal">El entregable</div>
-  <h2 class="h-lg reveal d1">Cuellos de botella y cómo atacarlos</h2>
-  <p class="lead reveal d2" style="margin-left:0">Lo que identificamos, y qué proponemos hacer al respecto.</p>
-  <div style="margin-top:40px">
-    <div class="bn reveal"><div class="n">01</div><div>
-      <h3>Ancho de banda de memoria</h3>
-      <p>HPCG y nuestro stencil (AI ≈ 0.33 FLOP/byte) saturan la memoria mucho antes que la FPU.
-        <span class="fix">Optimización:</span> cache blocking / tiling temporal, layout SoA, first-touch consciente de NUMA, y priorizar reuso de datos sobre más FLOPs.</p></div></div>
-    <div class="bn reveal"><div class="n">02</div><div>
-      <h3>Escalabilidad limitada por memoria</h3>
-      <p>El stencil se estanca tras 4 hilos (3.3×→3.6×): al saturar el ancho de banda, los núcleos extra rinden cada vez menos.
-        <span class="fix">Optimización:</span> no sobre-provisionar hilos en cargas memory-bound; usar el punto donde satura el ancho de banda y volcar el resto a mejorar localidad.</p></div></div>
-    <div class="bn reveal"><div class="n">03</div><div>
-      <h3>Overhead de comunicación</h3>
-      <p>En un nodo, OpenMP ≈ MPI; a escala, la red domina.
-        <span class="fix">Optimización:</span> solapar cómputo y comunicación, mapeo consciente de topología, y reducir la frecuencia de sincronización de halos.</p></div></div>
-    <div class="bn reveal"><div class="n">04</div><div>
-      <h3>Pico vs. sostenido</h3>
-      <p>Ni HPL pasa del 64% del pico teórico (Rmax/Rpeak de El Capitan).
-        <span class="fix">Optimización:</span> apoyarse en librerías con máxima reutilización (BLAS nivel-3), y elegir algoritmos de alta intensidad aritmética cuando sea posible.</p></div></div>
-    <div class="bn reveal"><div class="n">05</div><div>
-      <h3>Thermal throttling (metodología)</h3>
-      <p>En una laptop, las corridas largas bajan de frecuencia por calor.
-        <span class="fix">Mitigación:</span> correr con cargador, sin otras apps, y con enfriamiento entre corridas. Documentado como nota de método.</p></div></div>
-  </div>
-</section>
+  <!-- 05 · UNIVERSO -->
+  <section class="scene" id="universe" data-title="La escala">
+    <div class="aurora blue"></div><div class="aurora red"></div>
+    <div class="scene-inner universe-grid">
+      <div>
+        <div class="scene-no reveal">05 · De la laptop</div>
+        <h2 class="headline reveal d1">La misma física.<br><span class="gradient">Otra escala.</span></h2>
+        <p class="lead reveal d2">Nuestra aplicación calcula interacción gravitacional directa. Las simulaciones científicas cambian el algoritmo para escalar, pero persiguen el mismo fenómeno: cómo la gravedad organiza el universo.</p>
+        <p class="bridge reveal d3">El benchmark deja de ser una cifra cuando entendemos qué ciencia intenta hacer posible.</p>
+      </div>
+      <div class="video-shell reveal d2">
+        <div class="video-tag">ν²GC · Ishiyama et al.</div>
+        <iframe id="universe-video" data-src="https://www.youtube-nocookie.com/embed/kndzioHG8Uc?rel=0&autoplay=1" title="Simulación cosmológica ν²GC" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        <button class="video-poster" id="play-video" type="button" aria-label="Reproducir la simulación cosmológica">
+          <span><span class="play-orbit"><span class="play">▶</span></span><strong>Reproducir simulación</strong><small>550 mil millones de partículas</small></span>
+        </button>
+      </div>
+    </div>
+  </section>
 
-<!-- ============ CLOSING ============ -->
-<section class="center">
-  <div class="eyebrow reveal">Cerramos el círculo</div>
-  <h2 class="h-xl reveal d1">Comparamos. Encontramos el cuello.<br>Propusimos la mejora.</h2>
-  <p class="lead reveal d2">De un paper de 1995 a la lista mundial de 2025, pasando por nuestras propias mediciones.
-    El rendimiento real no vive en el pico: vive en el Roofline.</p>
-</section>
+  <!-- 06 · ACCIONES -->
+  <section class="scene" id="actions" data-title="Qué hacemos">
+    <div class="scene-inner">
+      <div class="scene-no reveal">06 · Del diagnóstico a la acción</div>
+      <h2 class="headline reveal d1">Cada techo exige una <span class="gradient">estrategia distinta.</span></h2>
+      <div class="action-grid">
+        <article class="action reveal d1" data-n="01" style="--c:var(--memory)"><div class="icon">01</div><h3>Ancho de banda</h3><p>Mejorar localidad con <strong>blocking</strong>, reuso de datos y un layout consciente de caché.</p></article>
+        <article class="action reveal d2" data-n="02" style="--c:var(--amber)"><div class="icon">02</div><h3>Hilos útiles</h3><p>Detenerse en el punto de saturación. Más hilos pueden consumir sin acelerar.</p></article>
+        <article class="action reveal d3" data-n="03" style="--c:var(--green)"><div class="icon">03</div><h3>Comunicación</h3><p>Solapar cómputo y mensajes, reducir sincronizaciones y respetar la topología.</p></article>
+        <article class="action wide reveal d2" data-n="04" style="--c:var(--compute)"><div class="icon">04</div><div><h3>Intensidad aritmética</h3><p>Favorecer algoritmos y librerías que hagan más operaciones por cada byte movido.</p></div></article>
+        <article class="action compact reveal d3" data-n="05" style="--c:#9e84ff"><div class="icon">05</div><h3>Medición estable</h3><p>Controlar temperatura, entorno y repetición.</p></article>
+      </div>
+    </div>
+  </section>
 
-<footer>
-  <div class="brand" style="font-family:var(--display);font-weight:600;font-size:16px">Benchmark y Rendimiento de Aplicaciones Paralelas · Caso 4</div>
-  <div class="team">
-    <span>Luis Palacios</span><span>Diego</span><span>Roberto</span><span>Nico</span><span>Esteban</span>
+  <!-- 07 · CIERRE -->
+  <section class="scene" id="closing" data-title="Conclusión">
+    <div class="aurora red"></div><div class="aurora blue"></div>
+    <div class="scene-inner">
+      <div class="closing-rule reveal">La idea que queda</div>
+      <h2 class="reveal d1">Comprar más núcleos<br>no elimina el <span class="gradient">cuello de botella.</span></h2>
+      <p class="final-line reveal d2">Primero hay que saber contra qué techo está chocando el código.</p>
+      <p class="teamline reveal d3">Luis Palacios · Diego · Roberto · Nico · Esteban<br>Universidad del Valle de Guatemala · Sección 20</p>
+      <button class="appendix-open reveal d4" id="open-appendix" type="button">Abrir respaldo para preguntas ↓</button>
+    </div>
+  </section>
+</main>
+
+<!-- El respaldo no interrumpe las ocho escenas principales. -->
+<aside id="appendix" hidden>
+  <div class="appendix-inner">
+    <div class="appendix-head"><div><div class="scene-no">Apéndice</div><h2>Datos para la discusión.</h2><p class="lead">Instrumentos, comunicación, antecedentes y fuentes.</p></div><button class="back-to-end" id="close-appendix" type="button">Volver al cierre ↑</button></div>
+
+    <section class="appendix-block" id="instruments">
+      <h3>Qué estresó cada prueba</h3>
+      <div class="card-grid">
+        <article class="card" style="--c:var(--compute)"><div class="role">Compute-bound</div><h4>HPL / LINPACK</h4><p>Álgebra lineal densa y rendimiento sostenido de punto flotante.</p><div class="owner">Responsable · Diego</div></article>
+        <article class="card" style="--c:var(--memory)"><div class="role">Memory-bound</div><h4>HPCG</h4><p>Gradiente conjugado, matriz dispersa y accesos irregulares.</p><div class="owner">Responsable · Roberto</div></article>
+        <article class="card" style="--c:var(--memory)"><div class="role">Ancho de banda</div><h4>STREAM</h4><p>Ancho de banda de memoria sostenible.</p><div class="owner">Responsable · Roberto</div></article>
+        <article class="card" style="--c:var(--amber)"><div class="role">Comunicación</div><h4>NPB</h4><p>Kernels de NASA en OpenMP y MPI; proxy práctico de SPEC.</p><div class="owner">Responsable · Nico</div></article>
+        <article class="card" style="--c:var(--compute)"><div class="role">Apps propias</div><h4>N-body + Stencil</h4><p>Dos extremos controlados del modelo Roofline.</p><div class="owner">Responsable · Esteban</div></article>
+        <article class="card" style="--c:var(--green)"><div class="role">Reproducibilidad</div><h4>Docker · M4 Pro</h4><p>Un entorno y una máquina de referencia para comparar resultados.</p><div class="owner">Responsable · Luis</div></article>
+      </div>
+    </section>
+
+    <section class="appendix-block">
+      <h3>Mismo kernel, dos paradigmas</h3>
+      <p class="lead" style="margin-bottom:28px">NPB CG clase C muestra un comportamiento cercano entre OpenMP y MPI dentro de un solo nodo.</p>
+      <div class="chart-shell appendix-figure"><img src="../analysis/npb_omp_vs_mpi.png" alt="Comparación NPB CG entre OpenMP y MPI"></div>
+    </section>
+
+    <section class="appendix-block">
+      <h3>Treinta años siguiendo el mismo límite</h3>
+      <div class="timeline">
+        <article class="tl"><div class="year">1995</div><h4>Memory wall</h4><p>Procesador y DRAM avanzan a ritmos distintos.</p><cite>Wulf & McKee</cite></article>
+        <article class="tl"><div class="year">1995</div><h4>STREAM</h4><p>El ancho de banda sostenible se vuelve medible.</p><cite>McCalpin</cite></article>
+        <article class="tl"><div class="year">2009</div><h4>Roofline</h4><p>Los límites aparecen juntos en una gráfica.</p><cite>Williams et al.</cite></article>
+        <article class="tl"><div class="year">2016</div><h4>HPCG</h4><p>Una métrica representativa complementa a HPL.</p><cite>Dongarra et al.</cite></article>
+        <article class="tl"><div class="year">2025</div><h4>El Capitan</h4><p>La brecha se observa en escala exa.</p><cite>TOP500, nov. 2025</cite></article>
+      </div>
+    </section>
+
+    <section class="appendix-block">
+      <h3>Fuentes principales</h3>
+      <p class="source-line"><a href="https://top500.org/lists/top500/2025/11/highs/">TOP500 nov. 2025</a> · <a href="https://dl.acm.org/doi/abs/10.1145/1498765.1498785">Roofline</a> · <a href="https://dl.acm.org/doi/10.1145/216585.216588">Memory Wall</a> · <a href="https://hpcg-benchmark.org/">HPCG</a> · <a href="https://www.cs.virginia.edu/stream/">STREAM</a> · <a href="https://docs.nersc.gov/tools/performance/roofline/">NERSC Roofline</a></p>
+    </section>
+    <footer><span>Benchmark y rendimiento de aplicaciones paralelas · Caso 4</span><span>UVG · Computación Paralela y Distribuida</span></footer>
   </div>
-  <div>Universidad del Valle de Guatemala · Computación Paralela y Distribuida · Sección 20</div>
-  <div class="srclist">
-    <b style="color:var(--muted)">Fuentes:</b>
-    <a href="https://top500.org/lists/top500/2025/11/highs/">TOP500 nov 2025</a> ·
-    <a href="https://dl.acm.org/doi/abs/10.1145/1498765.1498785">Roofline (Williams 2009)</a> ·
-    <a href="https://dl.acm.org/doi/10.1145/216585.216588">Memory Wall (Wulf & McKee 1995)</a> ·
-    <a href="https://hpcg-benchmark.org/">HPCG (Dongarra 2016)</a> ·
-    <a href="https://www.cs.virginia.edu/stream/">STREAM (McCalpin 1995)</a> ·
-    <a href="https://docs.nersc.gov/tools/performance/roofline/">NERSC Roofline</a>
-  </div>
-</footer>
+</aside>
 
 <script>
-// ---- scroll progress + reveal ----
-const progress = document.getElementById('progress');
-addEventListener('scroll', () => {
-  const h = document.documentElement;
-  progress.style.width = (h.scrollTop/(h.scrollHeight-h.clientHeight)*100) + '%';
-}, {passive:true});
+// Navegacion de escenas: teclado, botones, rueda/scroll natural y control remoto.
+const scenes=[...document.querySelectorAll('.scene')];
+const rail=document.getElementById('rail'), counter=document.getElementById('counter');
+const chapter=document.getElementById('chapter'), progress=document.getElementById('progress');
+const prev=document.getElementById('prev'), next=document.getElementById('next');
+let current=0, navigating=false;
+const urlParams=new URLSearchParams(location.search);
+const captureScene=urlParams.get('capture');
+if(captureScene)scenes.forEach(scene=>{if(scene.id!==captureScene)scene.style.display='none'});
 
-const revealEls = document.querySelectorAll('.reveal');
-function show(el){ el.classList.add('visible'); if(el.querySelector) countIn(el); }
-if('IntersectionObserver' in window){
-  const io = new IntersectionObserver((entries)=>{
-    entries.forEach(e=>{ if(e.isIntersecting){ show(e.target); io.unobserve(e.target);} });
-  },{threshold:0.15});
-  revealEls.forEach(el=>io.observe(el));
-  // red de seguridad: si algo en pantalla no revelo (throttle raro del navegador),
-  // lo forzamos; nada queda invisible en la presentacion en vivo.
-  const safety = ()=>revealEls.forEach(el=>{ if(!el.classList.contains('visible')){
-    const r=el.getBoundingClientRect(); if(r.top < innerHeight*0.92 && r.bottom>0) show(el); } });
-  addEventListener('scroll', safety, {passive:true});
-  addEventListener('load', ()=>setTimeout(safety,300));
-} else {
-  revealEls.forEach(show); // navegador sin IO: mostramos todo de una
+scenes.forEach((scene,i)=>{
+  const dot=document.createElement('button'); dot.type='button'; dot.className='dot';
+  dot.setAttribute('aria-label',scene.dataset.title); dot.addEventListener('click',()=>go(i));
+  rail.appendChild(dot);
+});
+const dots=[...rail.children];
+
+function activate(i){
+  current=Math.max(0,Math.min(scenes.length-1,i));
+  scenes.forEach((s,n)=>s.classList.toggle('active',n===current));
+  dots.forEach((d,n)=>d.classList.toggle('active',n===current));
+  counter.textContent=String(current+1).padStart(2,'0')+' / '+String(scenes.length).padStart(2,'0');
+  chapter.textContent=scenes[current].dataset.title;
+  progress.style.width=((current+1)/scenes.length*100)+'%';
+  prev.disabled=current===0; next.disabled=current===scenes.length-1;
+  countIn(scenes[current]);
 }
+function go(i){
+  if(i<0||i>=scenes.length)return;
+  navigating=true; activate(i); scenes[i].scrollIntoView({behavior:'smooth',block:'start'});
+  setTimeout(()=>navigating=false,650);
+}
+prev.addEventListener('click',()=>go(current-1)); next.addEventListener('click',()=>go(current+1));
 
-// ---- animated counters ----
+addEventListener('keydown',e=>{
+  if(e.target.matches('button,a,input,textarea')&&e.key!=='Escape')return;
+  if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){e.preventDefault();go(current+1)}
+  if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){e.preventDefault();go(current-1)}
+  if(e.key==='Home'){e.preventDefault();go(0)}
+  if(e.key==='End'){e.preventDefault();go(scenes.length-1)}
+  if(e.key.toLowerCase()==='f')toggleFullscreen();
+});
+
+const observer=new IntersectionObserver(entries=>{
+  if(navigating)return;
+  const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
+  if(visible)activate(scenes.indexOf(visible.target));
+},{threshold:[.45,.6,.75]});
+scenes.forEach(s=>observer.observe(s));
+
+// Pantalla completa con F o con el boton superior.
+function toggleFullscreen(){
+  if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+}
+document.getElementById('fullscreen').addEventListener('click',toggleFullscreen);
+
+// El video se carga al pedirlo: la diapositiva siempre conserva una portada.
+const playVideo=document.getElementById('play-video'),universeVideo=document.getElementById('universe-video');
+playVideo.addEventListener('click',()=>{
+  if(!universeVideo.src)universeVideo.src=universeVideo.dataset.src;
+  playVideo.classList.add('hide');
+});
+
+// Contadores: se ejecutan al entrar a cada escena.
 function countIn(scope){
   scope.querySelectorAll('[data-count]').forEach(el=>{
-    if(el.dataset.done) return; el.dataset.done=1;
-    const target=parseFloat(el.dataset.count), dec=parseInt(el.dataset.dec||'0');
-    const suf=el.dataset.suffix||'', pre=el.dataset.prefix||'';
-    const dur=1400, t0=performance.now();
-    const fmt=v=> pre + (dec? v.toLocaleString('en',{minimumFractionDigits:dec,maximumFractionDigits:dec})
-                            : Math.round(v).toLocaleString('en')) + suf;
-    (function tick(now){
-      const p=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-p,3);
-      el.textContent=fmt(target*e);
-      if(p<1) requestAnimationFrame(tick);
-    })(t0);
+    if(el.dataset.done)return; el.dataset.done='1';
+    const target=parseFloat(el.dataset.count),dec=parseInt(el.dataset.dec||'0');
+    const suffix=el.dataset.suffix||'',duration=1150,start=performance.now();
+    const format=v=>(dec?v.toLocaleString('en',{minimumFractionDigits:dec,maximumFractionDigits:dec}):Math.round(v).toLocaleString('en'))+suffix;
+    const tick=now=>{const p=Math.min(1,(now-start)/duration),ease=1-Math.pow(1-p,3);el.textContent=format(target*ease);if(p<1)requestAnimationFrame(tick)};
+    requestAnimationFrame(tick);
   });
 }
 
-// ---- fondo interactivo: red de particulas en TODA la pagina ----
-const cv=document.getElementById('bg-canvas'), ctx=cv.getContext('2d');
-let W,H,DPR,parts=[]; const mouse={x:-9999,y:-9999,active:false};
-// paleta de la marca (rojo compute / azul memory / ambar / blanco)
-const COLORS=['255,93,115','57,160,214','232,176,75','210,222,245'];
+// El apendice solo aparece cuando el expositor lo pide al final.
+const appendix=document.getElementById('appendix');
+document.getElementById('open-appendix').addEventListener('click',()=>{
+  appendix.hidden=false; document.documentElement.style.scrollSnapType='none';
+  requestAnimationFrame(()=>appendix.scrollIntoView({behavior:'smooth'}));
+});
+document.getElementById('close-appendix').addEventListener('click',()=>{
+  go(scenes.length-1); setTimeout(()=>{appendix.hidden=true;document.documentElement.style.scrollSnapType='y mandatory'},650);
+});
+
+// Fondo N-body interactivo. Se reduce automaticamente si el usuario lo solicita.
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const canvas=document.getElementById('bg-canvas'),ctx=canvas.getContext('2d');
+let W=0,H=0,DPR=1,particles=[];const pointer={x:-9999,y:-9999,on:false};
+const palette=['255,93,115','57,160,214','241,185,76','205,218,247'];
 function resize(){
-  DPR=Math.min(devicePixelRatio||1,2);
-  W=cv.width=innerWidth*DPR; H=cv.height=innerHeight*DPR;
-  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; init();
+  DPR=Math.min(devicePixelRatio||1,2);W=canvas.width=innerWidth*DPR;H=canvas.height=innerHeight*DPR;
+  const amount=Math.min(105,Math.floor(innerWidth*innerHeight/17000));
+  particles=Array.from({length:amount},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.18*DPR,vy:(Math.random()-.5)*.18*DPR,r:(Math.random()*1.35+.45)*DPR,c:palette[Math.floor(Math.random()*palette.length)]}));
 }
-function init(){
-  const N=Math.min(150, Math.floor(innerWidth*innerHeight/15000));
-  parts=[]; for(let i=0;i<N;i++) parts.push({
-    x:Math.random()*W, y:Math.random()*H,
-    vx:(Math.random()-.5)*0.28*DPR, vy:(Math.random()-.5)*0.28*DPR,
-    r:(Math.random()*1.7+0.6)*DPR, c:COLORS[Math.floor(Math.random()*COLORS.length)]});
-}
-const LINK=140; // distancia (px) para unir dos particulas
 function frame(){
-  ctx.clearRect(0,0,W,H);
-  const link=LINK*DPR, link2=link*link;
-  const mx=mouse.x*DPR, my=mouse.y*DPR, mR=180*DPR, mR2=mR*mR;
-  // fisica: deriva + repulsion del cursor
-  for(const p of parts){
-    if(mouse.active){ const dx=p.x-mx, dy=p.y-my, d2=dx*dx+dy*dy;
-      if(d2<mR2 && d2>1){ const d=Math.sqrt(d2), f=(1-d/mR)*0.7*DPR; p.vx+=dx/d*f; p.vy+=dy/d*f; } }
-    p.x+=p.vx; p.y+=p.vy; p.vx*=0.985; p.vy*=0.985;
-    // piso de movimiento: nunca se detienen del todo
-    if(Math.hypot(p.vx,p.vy) < 0.12*DPR){ p.vx+=(Math.random()-.5)*0.06*DPR; p.vy+=(Math.random()-.5)*0.06*DPR; }
-    if(p.x<0)p.x+=W; else if(p.x>W)p.x-=W;
-    if(p.y<0)p.y+=H; else if(p.y>H)p.y-=H;
+  ctx.clearRect(0,0,W,H);const link=120*DPR,link2=link*link,mx=pointer.x*DPR,my=pointer.y*DPR;
+  for(const p of particles){
+    p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x+=W;else if(p.x>W)p.x-=W;if(p.y<0)p.y+=H;else if(p.y>H)p.y-=H;
   }
-  // enlaces particula-particula
-  for(let i=0;i<parts.length;i++){ const a=parts[i];
-    for(let j=i+1;j<parts.length;j++){ const b=parts[j];
-      const dx=a.x-b.x, dy=a.y-b.y, d2=dx*dx+dy*dy;
-      if(d2<link2){ const al=(1-Math.sqrt(d2)/link)*0.16;
-        ctx.strokeStyle='rgba(130,150,190,'+al+')'; ctx.lineWidth=DPR*0.7;
-        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); } }
-    // enlace al cursor (mas brillante, con el color de la particula)
-    if(mouse.active){ const dx=a.x-mx, dy=a.y-my, d2=dx*dx+dy*dy;
-      if(d2<mR2){ const al=(1-Math.sqrt(d2)/mR)*0.5;
-        ctx.strokeStyle='rgba('+a.c+','+al+')'; ctx.lineWidth=DPR;
-        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(mx,my); ctx.stroke(); } }
-    ctx.beginPath(); ctx.fillStyle='rgba('+a.c+',0.85)'; ctx.arc(a.x,a.y,a.r,0,7); ctx.fill();
+  for(let i=0;i<particles.length;i++){
+    const a=particles[i];
+    for(let j=i+1;j<particles.length;j++){const b=particles[j],dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy;if(d2<link2){const alpha=(1-Math.sqrt(d2)/link)*.11;ctx.strokeStyle=`rgba(135,154,198,${alpha})`;ctx.lineWidth=.6*DPR;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}}
+    if(pointer.on){const dx=a.x-mx,dy=a.y-my,d=Math.hypot(dx,dy),radius=145*DPR;if(d<radius){ctx.strokeStyle=`rgba(${a.c},${(1-d/radius)*.28})`;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(mx,my);ctx.stroke()}}
+    ctx.fillStyle=`rgba(${a.c},.7)`;ctx.beginPath();ctx.arc(a.x,a.y,a.r,0,Math.PI*2);ctx.fill();
   }
-  requestAnimationFrame(frame);
+  if(!reduced)requestAnimationFrame(frame);
 }
-addEventListener('resize', resize);
-addEventListener('mousemove', e=>{ mouse.x=e.clientX; mouse.y=e.clientY; mouse.active=true; });
-addEventListener('touchmove', e=>{ if(e.touches[0]){ mouse.x=e.touches[0].clientX; mouse.y=e.touches[0].clientY; mouse.active=true; } }, {passive:true});
-resize(); frame();
+addEventListener('resize',resize);addEventListener('pointermove',e=>{pointer.x=e.clientX;pointer.y=e.clientY;pointer.on=true},{passive:true});
+resize();frame();
+const requestedScene=urlParams.get('scene')||captureScene;
+const hashIndex=scenes.findIndex(scene=>scene.id===requestedScene||'#'+scene.id===location.hash);
+if(hashIndex>=0){
+  navigating=true; scrollTo({top:scenes[hashIndex].offsetTop,behavior:'instant'}); activate(hashIndex);
+  setTimeout(()=>navigating=false,350);
+}else activate(0);
+
+// Oculta el chrome durante la exposicion hasta que vuelva a moverse el cursor.
+let chromeTimer;
+addEventListener('mousemove',()=>{document.body.classList.remove('idle');clearTimeout(chromeTimer);chromeTimer=setTimeout(()=>document.body.classList.add('idle'),2600)},{passive:true});
 </script>
+<style>.idle:fullscreen #controls{opacity:.18}.idle:fullscreen{cursor:none}</style>
 </body>
 </html>

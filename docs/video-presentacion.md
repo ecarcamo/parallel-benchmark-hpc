@@ -14,15 +14,19 @@ primero asombro, después el giro con nuestros datos.
 
 ### Por qué este y no otro
 
-1. **Es literalmente nuestra app.** El video es una simulación **N-body
-   gravitacional** — exactamente el algoritmo compute-bound que escribimos en
-   `apps/nbody.c`, pero a escala planetaria. Podemos decir en vivo: *"esto que
-   ven es el mismo tipo de cómputo que corrimos en una laptop; aquí corre en
-   un supercomputador con medio billón de cuerpos."*
-2. **Cierra el círculo con nuestros datos.** Las versiones de estas
-   simulaciones corren en **Fugaku**, que aparece **#2 en la lista HPCG de
-   noviembre 2025** que citamos (16.0 PFlop/s). El mismo hardware de nuestra
-   tabla, resolviendo el problema del video.
+1. **Es el mismo FENÓMENO FÍSICO que nuestra app.** El video es una simulación
+   **N-body gravitacional**: la misma física (gravedad de N cuerpos) que
+   `apps/nbody.c`. Ojo con la precisión: nuestra app es *directa,
+   todos-contra-todos* (O(n²)); las simulaciones científicas usan **TreePM**
+   (árbol + malla de partículas) para escalar. Por eso en vivo se dice *"el
+   mismo fenómeno físico, otra escala"*, **no** "el mismo algoritmo". Frase:
+   *"esto es la misma gravedad que corrimos en una laptop; aquí, con medio
+   billón de cuerpos."*
+2. **Respaldo de hardware real.** El video ν²GC fue producido por el proyecto
+   4D2U del **NAOJ**; el cómputo gravitacional corrió en el supercomputador
+   **ATERUI** (y el K computer de RIKEN). Como dato adicional, el grupo de
+   Ishiyama **más tarde** ejecutó otras simulaciones N-body en **Fugaku**
+   (HPC Asia 2022). No confundir: el video NO es de Fugaku.
 3. **Estética correcta.** Cinematográfico, oscuro, científico: encaja con la
    página tipo OpenAI que vamos a construir (loop silencioso de fondo en el
    hero).
@@ -44,9 +48,12 @@ primero asombro, después el giro con nuestros datos.
   of the Universe in the Planck Cosmology.* Publications of the Astronomical
   Society of Japan, 67(4), 61.
   [Oxford Academic](https://academic.oup.com/pasj/article/67/4/61/1535923)
-- Ishiyama, T. et al. (2022). *High Performance Gravitational N-body
-  Simulations on Supercomputer Fugaku.* HPC Asia 2022.
-  [ACM DL](https://dl.acm.org/doi/10.1145/3492805.3492816)
+- Hardware del video: proyecto **4D2U del NAOJ**; cómputo en el supercomputador
+  **ATERUI** (NAOJ / CfCA) y el **K computer** (RIKEN).
+  [ATERUI II — NAOJ](https://www.nao.ac.jp/en/research/telescope/aterui2.html)
+- Trabajo POSTERIOR (distinto al video) en Fugaku: Ishiyama, T. et al. (2022).
+  *High Performance Gravitational N-body Simulations on Supercomputer Fugaku.*
+  HPC Asia 2022. [ACM DL](https://dl.acm.org/doi/10.1145/3492805.3492816)
 - Cobertura: [HPCwire — "Supercomputer Generates Largest Virtual Universe"](https://www.hpcwire.com/off-the-wire/supercomputer-generates-largest-virtual-universe-open-for-anyone-to-explore/)
 
 ## Alternativas (por si se quiere cambiar el tono)
